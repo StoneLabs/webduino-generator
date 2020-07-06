@@ -1,0 +1,18 @@
+#include "SPI.h"
+#include "WiFi.h"
+#include "WebServer.h"
+
+WebServer webserver("", __PORT__);
+
+void setup()
+{
+    WiFi.begin("__SSID__", "__PASS__");
+    webserver.begin();
+}
+
+char buff[64];
+int len = 64;
+void loop()
+{
+    webserver.processConnection(buff, len);
+}
