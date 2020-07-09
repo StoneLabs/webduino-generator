@@ -59,13 +59,29 @@ else:
     Error("reading config: Unknown connection type.")
 
 Section("Writing program files...")
-Text("( 1/ 1) main.ino")
+Text("( 0/ 2) main/")
+try:
+    os.mkdir("./output/main/")
+except OSError:
+    Error("Could not create output directory!")
+
+Text("( 1/ 2) main.ino")
 
 with open(args.template_folder + fileNameIn, 'r') as file:
     data = file.read()
     for option in NetworkConfig.options("WIFI"):
         data = data.replace("__" + option + "__", NetworkConfig.get("WIFI", option))
+    for option in NetworkConfig.options("SERVER"):
+        data = data.replace("__" + option + "__", NetworkConfig.get("SERVER", option))
 
-    text_file = open("./output/" + fileNameOut, "w")
+    text_file = open("./output/main/" + fileNameOut, "w")
+    text_file.write(data)
+    text_file.close()
+
+Text("( 2/ 2) WebServer.h")
+
+with open(args.template_folder + "WebServer.h", 'r') as file:
+    data = file.read()
+    text_file = open("./output/main/" + "WebServer.h", "w")
     text_file.write(data)
     text_file.close()
