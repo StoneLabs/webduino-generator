@@ -9,7 +9,7 @@ def Text(text: str) -> None:
 
 def Error(text: str) -> None:
     console.print("[bold red]Error", text)
-    exit()
+    exit(1)
 
 if __name__ == "__main__":
     Section("Section demo")
