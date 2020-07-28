@@ -6,8 +6,13 @@ default :
 	@echo " - all: first assamble than build"
 
 assemble :
-	python ./source/generator.py input
+	@python ./source/generator.py input
+
+open :
+	@arduino ./output/main/main.ino
 
 clean :
 	@echo "Clearing output..."
-	@rm -r ./output/*
+	@rm -rf ./output/*
+
+all : clean assemble
