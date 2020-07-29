@@ -1,3 +1,5 @@
+input/
+input/*
 output/
 output/*
 workspace.code-workspace
