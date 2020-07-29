@@ -77,6 +77,7 @@ for dir_, _, files_ in os.walk(args.input):
 mimes = {}
 commands_add_str = ""
 commands_def_str = "\n"
+commands_api_str = ""
 
 for filename in files:
     with open(args.input + filename, 'r', encoding="UTF-8") as file:
@@ -89,6 +90,20 @@ for filename in files:
         Text("-> " + hash_s + ": " + filename + ", " + mime + " (" + m_hash_s + ")")
 
         mimes[m_hash_s] = mime
+
+        if (filename.endswith(".cpp")):
+            commands_api_str += "namespace _"
+            commands_api_str += hash_s
+            commands_api_str += " {\n\t"
+            commands_api_str += file.read().replace("\n","\n\t")
+            commands_api_str += "\n}\n"
+
+            commands_add_str += "webserver.addCommand(\""
+            commands_add_str += filename
+            commands_add_str += "\", &_"
+            commands_add_str += hash_s
+            commands_add_str += "::respond);\n\t"
+            continue
 
         commands_add_str += "webserver.addCommand(\""
         commands_add_str += filename
@@ -114,6 +129,8 @@ for filename in files:
 
 for m_hash in mimes:
     commands_def_str = "static const char _" + m_hash + "[] = " + cpp_str_esc(mimes[m_hash]) + ";\n" + commands_def_str
+
+commands_def_str += "\n" + commands_api_str
 
 
 Section("Writing program files...")
