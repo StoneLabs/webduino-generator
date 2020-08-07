@@ -15,7 +15,7 @@ WebServer webserver("", __PORT__);
 void setup()
 {
     Serial.begin(115200);
-    WiFi.begin("__SSID__", "__PASS__");
+    WiFi.begin(__SSID__, __PASS__);
     if ( WiFi.status() != WL_CONNECTED) 
     {
         Serial.println("Couldn't get a wifi connection");
