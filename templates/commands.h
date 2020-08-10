@@ -13,4 +13,8 @@ inline void staticResponder(WebServer &server, WebServer::ConnectionType type, c
   }
 }
 
-__COMMANDS_DEF__
+__COMMANDS_DEF_MIMES__
+
+__COMMANDS_DEF_STATIC__
+
+__COMMANDS_DEF_DYNAMIC__

@@ -1,4 +1,4 @@
-from userio import Section, Text, Error, GetUserPass
+from userio import Section, Text, Error, GetUserPass, console
 from helper import cpp_str_esc
 from rich.progress import Progress, BarColumn, TextColumn
 
@@ -21,6 +21,9 @@ parser.add_argument("-t", "--template", metavar="folder", type=str,
 parser.add_argument("-s", "--ssid", metavar="ssid", type=str,
                     default="", dest='ssid',
                     help="SSID of network")
+parser.add_argument("-p", "--port", metavar="port", type=int,
+                    default=80, dest='port',
+                    help="Port of webserver")
 parser.add_argument("-o", "--output", metavar="folder", type=str,
                     default="./output/", dest='output',
                     help="location of the output folder (default: ./output/)")
@@ -38,6 +41,14 @@ if not os.path.isdir(args.input):
 if not os.path.isdir(args.output):
     Error("Invalid input path!")
 
+# Check port
+if args.port < 0 or args.port > 65535:
+    Error("Invalid port!")
+
+# Check output
+if not os.path.isdir(args.output):
+    Error("Invalid input path!")
+
 # Check templates folder
 if not os.path.isdir(args.template):
     Error("Invalid template path!")
@@ -48,10 +59,24 @@ args.ssid, args.ssid_pass = GetUserPass("SSID: ", "Password: ")
 print(args)
 
 #
-# Read config file
+# Process input
 #
 Section("Processing input files...")
 
+# Template strings for replacement
+# The following patterns should be available (file_name, mime and content encoded as needed)
+# {file_name} {file_hash} {file_content} {mime_hash} {mime}
+
+template_str_add_index   = "\twebserver.setDefaultCommand(&f_{file_hash});\n\n"
+template_str_add_static  = "\twebserver.addCommand(\"{file_name}\", &f_{file_hash});\n"
+template_str_add_dynamic = "\twebserver.addCommand(\"{file_name}\", &f_{file_hash}::respond);\n"
+template_str_def_mime    = "static const char m_{mime_hash}[] = \"{mime}\";\n"
+template_str_def_dynamic = "namespace f_{file_hash} {{\n\t{file_content}\n}}\n\n"
+template_str_def_static  = "static const unsigned char f_{file_hash}_s[] PROGMEM = {file_content};\n" + \
+                           "inline void f_{file_hash} (WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)" + \
+                           "{{ staticResponder(server, type, url_tail, tail_complete, f_{file_hash}_s, m_{mime_hash}); }}\n"
+
+# Get list of all files
 files = set()
 for dir_, _, files_ in os.walk(args.input):
     for file_name in files_:
@@ -64,66 +89,47 @@ for dir_, _, files_ in os.walk(args.input):
 
         files.add(rel_file)
 
-
+# Strings to build
 mimes = {}
-commands_add_str = ""
-commands_def_str = "\n"
-commands_api_str = ""
+commands_add = ""
+commands_def_static  = ""
+commands_def_dynamic = ""
+commands_def_mimes   = ""
 
 print(files)
-for filename in files:
-    with open(os.path.join(args.input, filename), 'r', encoding="UTF-8") as file:
-        mime, encoding = mimetypes.guess_type(filename)
-        m_hash = hashlib.sha1(mime.encode("UTF-8")).hexdigest()
-        m_hash_s = m_hash[:10]
+for file_name in files:
+    with open(os.path.join(args.input, file_name), 'r', encoding="UTF-8") as file:
+        # Save mime hash and type
+        mime, encoding = mimetypes.guess_type(file_name)
+        mime_hash = hashlib.sha1(mime.encode("UTF-8")).hexdigest()
+        mime_hash = mime_hash[:10]
+        mimes[mime_hash] = mime
 
-        hash = hashlib.sha1(filename.encode("UTF-8")).hexdigest()
-        hash_s = hash[:10]
-        Text("-> " + hash_s + ": " + filename + ", " + mime + " (" + m_hash_s + ")")
+        # Get file hash
+        file_hash = hashlib.sha1(file_name.encode("UTF-8")).hexdigest()
+        file_hash = file_hash[:10]
+        Text("-> " + file_hash + ": " + file_name + ", " + mime + " (" + mime_hash + ")")
 
-        mimes[m_hash_s] = mime
+        replacer = {"file_name": file_name, "file_hash": file_hash, "mime_hash": mime_hash}
 
-        if (filename.endswith(".cpp")):
-            commands_api_str += "namespace _"
-            commands_api_str += hash_s
-            commands_api_str += " {\n\t"
-            commands_api_str += file.read().replace("\n","\n\t")
-            commands_api_str += "\n}\n"
-
-            commands_add_str += "webserver.addCommand(\""
-            commands_add_str += filename
-            commands_add_str += "\", &_"
-            commands_add_str += hash_s
-            commands_add_str += "::respond);\n\t"
+        if (file_name.endswith(".cpp")):
+            replacer["file_content"] = file.read().replace("\n", "\n\t")
+            console.print(replacer)
+            commands_add += template_str_add_dynamic.format(**replacer)
+            commands_def_dynamic += template_str_def_dynamic.format(**replacer)
             continue
 
-        commands_add_str += "webserver.addCommand(\""
-        commands_add_str += filename
-        commands_add_str += "\", &_"
-        commands_add_str += hash_s
-        commands_add_str += ");\n\t"
+        replacer["file_content"] = cpp_str_esc(file.read())
+        console.print(replacer)
+        commands_add += template_str_add_static.format(**replacer)
+        commands_def_static += template_str_def_static.format(**replacer)
 
-        commands_def_str += "static const unsigned char _"
-        commands_def_str += hash_s
-        commands_def_str += "_s[] PROGMEM = "
-        commands_def_str += cpp_str_esc(file.read())
-        commands_def_str += ";\n"
-        commands_def_str += "inline void _"
-        commands_def_str += hash_s
-        commands_def_str += " (WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) { staticResponder(server, type, url_tail, tail_complete, _"
-        commands_def_str += hash_s
-        commands_def_str += "_s, _"
-        commands_def_str += m_hash_s
-        commands_def_str += "); }\n"
-
-        if (filename == "index.html"):
-                commands_add_str = "webserver.setDefaultCommand(&_" + hash_s + ");" + "\n\n\t" + commands_add_str
+        if (file_name == "index.html"):
+                commands_add = template_str_add_index.format(**replacer) + commands_add
 
 for m_hash in mimes:
-    commands_def_str = "static const char _" + m_hash + "[] = " + cpp_str_esc(mimes[m_hash]) + ";\n" + commands_def_str
-
-commands_def_str += "\n" + commands_api_str
-
+    replacer = {"mime_hash" : m_hash, "mime": mimes[m_hash]}
+    commands_def_mimes += template_str_def_mime.format(**replacer)
 
 Section("Writing program files...")
 Text("( 0/ 3) main/")
@@ -138,8 +144,9 @@ with open(os.path.join(args.template, "main.wifi.ino"), 'r') as file:
     data = file.read()
     data = data.replace("__SSID__", cpp_str_esc(args.ssid))
     data = data.replace("__PASS__", cpp_str_esc(args.ssid_pass))
+    data = data.replace("__PORT__", str(args.port))
 
-    data = data.replace("__COMMANDS_ADD__", commands_add_str)
+    data = data.replace("__COMMANDS_ADD__", commands_add)
 
     text_file = open(os.path.join(args.output, "main/", "main.ino"), "w")
     text_file.write(data)
@@ -158,7 +165,9 @@ Text("( 3/ 3) commands.h")
 with open(os.path.join(args.template + "commands.h"), 'r') as file:
     data = file.read()
 
-    data = data.replace("__COMMANDS_DEF__", commands_def_str)
+    data = data.replace("__COMMANDS_DEF_MIMES__", commands_def_mimes)
+    data = data.replace("__COMMANDS_DEF_STATIC__", commands_def_static)
+    data = data.replace("__COMMANDS_DEF_DYNAMIC__", commands_def_dynamic)
     
     text_file = open(os.path.join(args.output, "main/", "commands.h"), "w")
     text_file.write(data)

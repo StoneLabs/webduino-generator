@@ -24,7 +24,7 @@ void setup()
     else
         Serial.println(WiFi.localIP());
 
-    __COMMANDS_ADD__
+__COMMANDS_ADD__
 
     webserver.begin();
 }
