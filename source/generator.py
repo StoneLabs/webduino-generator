@@ -54,23 +54,23 @@ userio.quickTable("", ["Argument", "Value"],
 
 # Check input
 if not os.path.isdir(args.input):
-    Error("Invalid input path!")
+    userio.error("Invalid input path!")
 
 # Check output
 if not os.path.isdir(args.output):
-    Error("Invalid input path!")
+    userio.error("Invalid output path!")
 
 # Check port
 if args.port < 0 or args.port > 65535:
-    Error("Invalid port!")
+    userio.error("Invalid port!")
 
 # Check output
 if not os.path.isdir(args.output):
-    Error("Invalid input path!")
+    userio.error("Invalid input path!")
 
 # Check templates folder
 if not os.path.isdir(args.template):
-    Error("Invalid template path!")
+    userio.error("Invalid template path!")
 
 if not args.quiet:
     userio.warn("SSID and Password will be saved as plaintext in the output!")
