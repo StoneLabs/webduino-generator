@@ -1,6 +1,7 @@
 import mimetypes 
 import argparse
 import hashlib
+import shutil
 import os
 
 from userio import UserIO
@@ -59,6 +60,15 @@ if not os.path.isdir(args.input):
 # Check output
 if not os.path.isdir(args.output):
     userio.error("Invalid output path!")
+if os.path.exists(os.path.join(args.output, "main/")):
+    folder = os.path.abspath(os.path.join(args.output, "main/"))
+    userio.warn("Output folder " + folder + " exists!")
+    userio.print("Press Enter to delete. Ctrl+C to cancel!")
+    try:
+        input()
+        shutil.rmtree(folder)
+    except KeyboardInterrupt:
+        exit(1)
 
 # Check port
 if args.port < 0 or args.port > 65535:
@@ -133,6 +143,13 @@ with Progress(BarColumn(),
 
         # Save mime hash and type
         mime, encoding = mimetypes.guess_type(file_name)
+
+        # https://stackoverflow.com/questions/1176022/unknown-file-type-mime
+        # Not generating a Content-Type header entry would be the best solution
+        # but is not feasible with the current system
+        if mime == None:
+            mime = "application/octet-stream"
+
         mime_hash = hashlib.sha1(mime.encode("UTF-8")).hexdigest()
         mime_hash = mime_hash[:10]
         mimes[mime_hash] = mime
@@ -172,7 +189,6 @@ with Progress(BarColumn(),
                 commands_def_static += template_str_def_staticb.format(**replacer)
 
         # Update progress bar
-        progress.refresh()
         progress.update(task1, advance=1)
 
     # All files processed

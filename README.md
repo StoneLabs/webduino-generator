@@ -1,18 +1,19 @@
 # Webduino Generator
-Python program to automatically create arduino webserver from folder
+Python program to automatically create arduino webserver from folder.
+Supports basically all file types. For example: html, js, css, images, and arbitrary binaries.
+Also supports coding cpp functions inside the website files (see input/*.cpp) for example.
 
 # Usage
 
 ```
 $ git clone https://github.com/StoneLabs/webduino-generator
 $ cd webduino-generator/
-$ make all
-$ make open
+$ python source/generator.py input
+$ arduino output/main/main.ino
 
-Or use arduino-cli to upload directly from the shell (linux only)
-$ make all
-$ make upload
+Or use arduino-cli to compile and upload directly from the shell (linux only)
+$ ./uploader.sh
 ```
 
 ### Note
-Project is WIP. Tested on Windows (MinGW) and Linux.
+Project is WIP. Tested on Windows (PS) and Linux.
