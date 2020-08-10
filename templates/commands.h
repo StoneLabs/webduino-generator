@@ -1,6 +1,18 @@
 #pragma once
 
+// Responde with string from PROGMEM. Read till \0
 inline void staticResponder(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete, const unsigned char* response, const char* mime)
+{
+  server.httpSuccess(mime);
+
+  if (type != WebServer::ConnectionType::HEAD)
+  {
+    server.printP(response);
+  }
+}
+
+// Responde with data from PROGMEM
+inline void staticResponder(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete, const unsigned char* response, size_t response_size, const char* mime)
 {
   server.httpSuccess(mime);
 
@@ -9,7 +21,7 @@ inline void staticResponder(WebServer &server, WebServer::ConnectionType type, c
   if (type != WebServer::ConnectionType::HEAD)
   {
     /* this is a special form of print that outputs from PROGMEM */
-    server.printP(response);
+    server.writeP(response, response_size);
   }
 }
 

@@ -1,5 +1,5 @@
 from userio import Section, Text, Error, GetUserPass, console
-from helper import cpp_str_esc
+from helper import cpp_str_esc, cpp_img_esc
 from rich.progress import Progress, BarColumn, TextColumn
 
 import mimetypes 
@@ -75,6 +75,9 @@ template_str_def_dynamic = "namespace f_{file_hash} {{\n\t{file_content}\n}}\n\n
 template_str_def_static  = "static const unsigned char f_{file_hash}_s[] PROGMEM = {file_content};\n" + \
                            "inline void f_{file_hash} (WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)" + \
                            "{{ staticResponder(server, type, url_tail, tail_complete, f_{file_hash}_s, m_{mime_hash}); }}\n"
+template_str_def_staticb = "static const unsigned char f_{file_hash}_s[] PROGMEM = {file_content};\n" + \
+                           "inline void f_{file_hash} (WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)" + \
+                           "{{ staticResponder(server, type, url_tail, tail_complete, f_{file_hash}_s, sizeof(f_{file_hash}_s), m_{mime_hash}); }}\n"
 
 # Get list of all files
 files = set()
@@ -98,34 +101,48 @@ commands_def_mimes   = ""
 
 print(files)
 for file_name in files:
-    with open(os.path.join(args.input, file_name), 'r', encoding="UTF-8") as file:
-        # Save mime hash and type
-        mime, encoding = mimetypes.guess_type(file_name)
-        mime_hash = hashlib.sha1(mime.encode("UTF-8")).hexdigest()
-        mime_hash = mime_hash[:10]
-        mimes[mime_hash] = mime
+    # Save mime hash and type
+    mime, encoding = mimetypes.guess_type(file_name)
+    mime_hash = hashlib.sha1(mime.encode("UTF-8")).hexdigest()
+    mime_hash = mime_hash[:10]
+    mimes[mime_hash] = mime
 
-        # Get file hash
-        file_hash = hashlib.sha1(file_name.encode("UTF-8")).hexdigest()
-        file_hash = file_hash[:10]
-        Text("-> " + file_hash + ": " + file_name + ", " + mime + " (" + mime_hash + ")")
+    # Get file hash
+    file_hash = hashlib.sha1(file_name.encode("UTF-8")).hexdigest()
+    file_hash = file_hash[:10]
+    Text("-> " + file_hash + ": " + file_name + ", " + mime + " (" + mime_hash + ")")
 
-        replacer = {"file_name": file_name, "file_hash": file_hash, "mime_hash": mime_hash}
+    replacer = {"file_name": file_name, "file_hash": file_hash, "mime_hash": mime_hash}
 
-        if (file_name.endswith(".cpp")):
-            replacer["file_content"] = file.read().replace("\n", "\n\t")
+    # Set default action for index.html
+    if (file_name == "index.html"):
+            commands_add = template_str_add_index.format(**replacer) + commands_add
+
+    try:
+        # Try to handle file non-binary UTF-8 file.
+        with open(os.path.join(args.input, file_name), 'r', encoding="UTF-8") as file:
+            # Handle dynamic content (cpp files)
+            if (file_name.endswith(".cpp")):
+                replacer["file_content"] = file.read().replace("\n", "\n\t")
+                console.print(replacer)
+                commands_add += template_str_add_dynamic.format(**replacer)
+                commands_def_dynamic += template_str_def_dynamic.format(**replacer)
+                continue
+
+            # Normal static page
+            replacer["file_content"] = cpp_str_esc(file.read())
             console.print(replacer)
-            commands_add += template_str_add_dynamic.format(**replacer)
-            commands_def_dynamic += template_str_def_dynamic.format(**replacer)
-            continue
+            commands_add += template_str_add_static.format(**replacer)
+            commands_def_static += template_str_def_static.format(**replacer)
+    except UnicodeDecodeError:
+        # Encode as binary if UTF-8 failes
+        with open(os.path.join(args.input, file_name), 'rb') as file:
+            replacer["file_content"] = cpp_img_esc(file)
+            console.print(replacer)
+            commands_add += template_str_add_static.format(**replacer)
+            commands_def_static += template_str_def_staticb.format(**replacer)
+            console.print(commands_def_static)
 
-        replacer["file_content"] = cpp_str_esc(file.read())
-        console.print(replacer)
-        commands_add += template_str_add_static.format(**replacer)
-        commands_def_static += template_str_def_static.format(**replacer)
-
-        if (file_name == "index.html"):
-                commands_add = template_str_add_index.format(**replacer) + commands_add
 
 for m_hash in mimes:
     replacer = {"mime_hash" : m_hash, "mime": mimes[m_hash]}
