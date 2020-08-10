@@ -1,11 +1,16 @@
-from userio import Section, Text, Error, GetUserPass, console
-from helper import cpp_str_esc, cpp_img_esc
-from rich.progress import Progress, BarColumn, TextColumn
-
 import mimetypes 
 import argparse
 import hashlib
 import os
+
+from userio import UserIO
+from helper import cpp_str_esc, cpp_img_esc
+from rich.table import Table
+from rich.traceback import install
+from rich.progress import Progress, BarColumn, TextColumn
+install()
+
+userio = UserIO()
 
 #
 # Parser input
@@ -24,6 +29,12 @@ parser.add_argument("-s", "--ssid", metavar="ssid", type=str,
 parser.add_argument("-p", "--port", metavar="port", type=int,
                     default=80, dest='port',
                     help="Port of webserver")
+parser.add_argument("-v", "--verbose", 
+                    action="store_true", dest='verbose',
+                    help="Enable verbose output")
+parser.add_argument("-q", "--quiet", 
+                    action="store_true", dest='quiet',
+                    help="Hides password warning")
 parser.add_argument("-o", "--output", metavar="folder", type=str,
                     default="./output/", dest='output',
                     help="location of the output folder (default: ./output/)")
@@ -32,6 +43,14 @@ parser.add_argument("-o", "--output", metavar="folder", type=str,
 # Check arguments
 #
 args = parser.parse_args()
+userio.verbose = args.verbose
+
+userio.print("[bold]Stone Labs. Webduino Gernerator\n")
+
+userio.print("Dumping arguments", verbose=True)
+userio.quickTable("", ["Argument", "Value"],
+                  [[arg, getattr(args, arg)] for arg in vars(args)],
+                  verbose=True)
 
 # Check input
 if not os.path.isdir(args.input):
@@ -53,15 +72,15 @@ if not os.path.isdir(args.output):
 if not os.path.isdir(args.template):
     Error("Invalid template path!")
 
-Text("Please enter network credentials:")
-args.ssid, args.ssid_pass = GetUserPass("SSID: ", "Password: ")
+if not args.quiet:
+    userio.warn("SSID and Password will be saved as plaintext in the output!")
+args.ssid, args.ssid_pass = userio.getUserPass("Please enter network credentials:", "SSID: ", "Password: ")
 
-print(args)
 
 #
 # Process input
 #
-Section("Processing input files...")
+userio.section("Processing input files...")
 
 # Template strings for replacement
 # The following patterns should be available (file_name, mime and content encoded as needed)
@@ -92,70 +111,92 @@ for dir_, _, files_ in os.walk(args.input):
 
         files.add(rel_file)
 
+userio.print("Processing " + str(len(files)) + " files...", verbose=True)
+
 # Strings to build
 mimes = {}
 commands_add = ""
-commands_def_static  = ""
+commands_def_static = ""
 commands_def_dynamic = ""
-commands_def_mimes   = ""
+commands_def_mimes = ""
 
-print(files)
-for file_name in files:
-    # Save mime hash and type
-    mime, encoding = mimetypes.guess_type(file_name)
-    mime_hash = hashlib.sha1(mime.encode("UTF-8")).hexdigest()
-    mime_hash = mime_hash[:10]
-    mimes[mime_hash] = mime
+files_verbose = []
+progress_current = TextColumn("Test")
+with Progress(BarColumn(),
+              "[progress.percentage]{task.percentage:>3.1f}%",
+              "[progress.description]{task.description}") as progress:
+    task1 = progress.add_task("Converting", total=len(files), start=True)
 
-    # Get file hash
-    file_hash = hashlib.sha1(file_name.encode("UTF-8")).hexdigest()
-    file_hash = file_hash[:10]
-    Text("-> " + file_hash + ": " + file_name + ", " + mime + " (" + mime_hash + ")")
+    for file_name in files:
+        # Update progress bar
+        progress.tasks[task1].description = file_name
 
-    replacer = {"file_name": file_name, "file_hash": file_hash, "mime_hash": mime_hash}
+        # Save mime hash and type
+        mime, encoding = mimetypes.guess_type(file_name)
+        mime_hash = hashlib.sha1(mime.encode("UTF-8")).hexdigest()
+        mime_hash = mime_hash[:10]
+        mimes[mime_hash] = mime
 
-    # Set default action for index.html
-    if (file_name == "index.html"):
-            commands_add = template_str_add_index.format(**replacer) + commands_add
+        # Get file hash
+        file_hash = hashlib.sha1(file_name.encode("UTF-8")).hexdigest()
+        file_hash = file_hash[:10]
 
-    try:
-        # Try to handle file non-binary UTF-8 file.
-        with open(os.path.join(args.input, file_name), 'r', encoding="UTF-8") as file:
-            # Handle dynamic content (cpp files)
-            if (file_name.endswith(".cpp")):
-                replacer["file_content"] = file.read().replace("\n", "\n\t")
-                console.print(replacer)
-                commands_add += template_str_add_dynamic.format(**replacer)
-                commands_def_dynamic += template_str_def_dynamic.format(**replacer)
-                continue
+        # Save file for verbose table after processing all files
+        files_verbose += [[file_name, file_hash, mime, mime_hash]]
 
-            # Normal static page
-            replacer["file_content"] = cpp_str_esc(file.read())
-            console.print(replacer)
-            commands_add += template_str_add_static.format(**replacer)
-            commands_def_static += template_str_def_static.format(**replacer)
-    except UnicodeDecodeError:
-        # Encode as binary if UTF-8 failes
-        with open(os.path.join(args.input, file_name), 'rb') as file:
-            replacer["file_content"] = cpp_img_esc(file)
-            console.print(replacer)
-            commands_add += template_str_add_static.format(**replacer)
-            commands_def_static += template_str_def_staticb.format(**replacer)
-            console.print(commands_def_static)
+        # Create string replace dict
+        replacer = {"file_name": file_name, "file_hash": file_hash, "mime_hash": mime_hash}
 
+        # Set default action for index.html
+        if (file_name == "index.html"):
+                commands_add = template_str_add_index.format(**replacer) + commands_add
 
+        try:
+            # Try to handle file non-binary UTF-8 file.
+            with open(os.path.join(args.input, file_name), 'r', encoding="UTF-8") as file:
+                if (file_name.endswith(".cpp")):
+                    # Handle dynamic content (cpp files)
+                    replacer["file_content"] = file.read().replace("\n", "\n\t")
+                    commands_add += template_str_add_dynamic.format(**replacer)
+                    commands_def_dynamic += template_str_def_dynamic.format(**replacer)
+                else:
+                    # Normal static page
+                    replacer["file_content"] = cpp_str_esc(file.read())
+                    commands_add += template_str_add_static.format(**replacer)
+                    commands_def_static += template_str_def_static.format(**replacer)
+        except UnicodeDecodeError:
+            # Encode as binary if UTF-8 failes
+            with open(os.path.join(args.input, file_name), 'rb') as file:
+                replacer["file_content"] = cpp_img_esc(file)
+                commands_add += template_str_add_static.format(**replacer)
+                commands_def_static += template_str_def_staticb.format(**replacer)
+
+        # Update progress bar
+        progress.refresh()
+        progress.update(task1, advance=1)
+
+    # All files processed
+    progress.tasks[task1].description = "Done"
+
+# Print table of all files processed
+userio.print("Listing processed files:", verbose=True)
+userio.quickTable("",
+                  ["File name", "File hash", "File MIME", "MIME hash"],
+                  files_verbose, verbose=True)
+
+userio.print("Processing " + str(len(mimes)) + " mimes.", verbose=True)
 for m_hash in mimes:
     replacer = {"mime_hash" : m_hash, "mime": mimes[m_hash]}
     commands_def_mimes += template_str_def_mime.format(**replacer)
 
-Section("Writing program files...")
-Text("( 0/ 3) main/")
+userio.section("Writing program files...")
+userio.print("( 0/ 3) main/")
 try:
     os.mkdir(os.path.join(args.output, "main/"))
 except OSError:
-    Error("Could not create output directory!")
+    userio.error("Could not create output directory!")
 
-Text("( 1/ 3) main.ino")
+userio.print("( 1/ 3) main.ino")
 
 with open(os.path.join(args.template, "main.wifi.ino"), 'r') as file:
     data = file.read()
@@ -169,7 +210,7 @@ with open(os.path.join(args.template, "main.wifi.ino"), 'r') as file:
     text_file.write(data)
     text_file.close()
 
-Text("( 2/ 3) WebServer.h")
+userio.print("( 2/ 3) WebServer.h")
 
 with open(os.path.join(args.template, "WebServer.wifi.h"), 'r') as file:
     data = file.read()
@@ -177,7 +218,7 @@ with open(os.path.join(args.template, "WebServer.wifi.h"), 'r') as file:
     text_file.write(data)
     text_file.close()
 
-Text("( 3/ 3) commands.h")
+userio.print("( 3/ 3) commands.h")
 
 with open(os.path.join(args.template + "commands.h"), 'r') as file:
     data = file.read()
