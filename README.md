@@ -7,11 +7,10 @@ Python program to automatically create arduino webserver from folder
 $ git clone https://github.com/StoneLabs/webduino-generator
 $ cd webduino-generator/
 $ make all
-
-# Open in arduino IDE
 $ make open
 
-# Or use arduino-cli to upload from directly from the shell (linux only)
+Or use arduino-cli to upload directly from the shell (linux only)
+$ make all
 $ make upload
 ```
 
