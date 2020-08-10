@@ -1,3 +1,5 @@
+set -e
+
 echo Listing available devices:
 arduino-cli board list
 echo -n "Please enter port: "
