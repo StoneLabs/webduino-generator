@@ -30,6 +30,9 @@ parser.add_argument("-s", "--ssid", metavar="ssid", type=str,
 parser.add_argument("-p", "--port", metavar="port", type=int,
                     default=80, dest='port',
                     help="Port of webserver")
+parser.add_argument("-m", "--mode", metavar="mode", type=str,
+                    default="wifinina", dest='mode',
+                    help="Connection mode/library to be used")
 parser.add_argument("-v", "--verbose", 
                     action="store_true", dest='verbose',
                     help="Enable verbose output")
@@ -60,6 +63,24 @@ if not os.path.isdir(args.input):
 # Check output
 if not os.path.isdir(args.output):
     userio.error("Invalid output path!")
+
+# Check port
+if args.port < 0 or args.port > 65535:
+    userio.error("Invalid port!")
+
+# Check mode
+if args.mode.lower() != "wifinina":
+    userio.error("Target mode not supported!\nSupported modes: wifinina")
+
+# Check output
+if not os.path.isdir(args.output):
+    userio.error("Invalid input path!")
+
+# Check templates folder
+if not os.path.isdir(args.template):
+    userio.error("Invalid template path!")
+
+# Clear previous output
 if os.path.exists(os.path.join(args.output, "main/")):
     folder = os.path.abspath(os.path.join(args.output, "main/"))
     userio.warn("Output folder " + folder + " exists!")
@@ -70,18 +91,7 @@ if os.path.exists(os.path.join(args.output, "main/")):
     except KeyboardInterrupt:
         exit(1)
 
-# Check port
-if args.port < 0 or args.port > 65535:
-    userio.error("Invalid port!")
-
-# Check output
-if not os.path.isdir(args.output):
-    userio.error("Invalid input path!")
-
-# Check templates folder
-if not os.path.isdir(args.template):
-    userio.error("Invalid template path!")
-
+# Get SSID and password for wifi connection
 if not args.quiet:
     userio.warn("SSID and Password will be saved as plaintext in the output!")
 args.ssid, args.ssid_pass = userio.getUserPass("Please enter network credentials:", "SSID: ", "Password: ")
