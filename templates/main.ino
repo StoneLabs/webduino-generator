@@ -10,12 +10,12 @@
 
 #include "commands.h"
 
-WebServer webserver("", __PORT__);
+WebServer webserver("", {{ metaData.port }});
 
 void setup()
 {
     Serial.begin(115200);
-    WiFi.begin(__SSID__, __PASS__);
+    WiFi.begin({{ metaData.pass }}, {{ metaData.pass }});
     if ( WiFi.status() != WL_CONNECTED) 
     {
         Serial.println("Couldn't get a wifi connection");
@@ -24,7 +24,13 @@ void setup()
     else
         Serial.println(WiFi.localIP());
 
-__COMMANDS_ADD__
+    {% if '"index.html"' in fileData %}
+    webserver.setDefaultCommand(&f_{{fileData['"index.html"'].file_hash}});
+    {%- endif %}
+
+    {% for file, data in fileData.items() %}
+    webserver.addCommand({{file}}, &f_{{data.file_hash}}{{"::respond" if data.file_type == 2}});
+    {%- endfor %}
 
     webserver.begin();
 }

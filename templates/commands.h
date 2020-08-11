@@ -25,8 +25,33 @@ inline void staticResponder(WebServer &server, WebServer::ConnectionType type, c
   }
 }
 
-__COMMANDS_DEF_MIMES__
+// MIME TYPES
+{%- for mime, hash in mimeData.items() %}
+static const char m_{{hash}}[] = {{mime}};
+{%- endfor %}
 
-__COMMANDS_DEF_STATIC__
+// STATIC PAGES
+{%- for file, data in fileData.items() %}
+{%- if data.file_type == 0 %}
+static const unsigned char f_{{data.file_hash}}_s[] PROGMEM = {{data.file_content}};
+inline void f_{{data.file_hash}} (WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) { staticResponder(server, type, url_tail, tail_complete, f_{{data.file_hash}}_s, m_{{data.mime_hash}}); }
+{%- endif %}
+{%- endfor %}
 
-__COMMANDS_DEF_DYNAMIC__
+// BINARY PAGES
+{%- for file, data in fileData.items() %}
+{%- if data.file_type == 1 %}
+static const unsigned char f_{{data.file_hash}}_s[] PROGMEM = {{data.file_content}};
+inline void f_{{data.file_hash}} (WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) { staticResponder(server, type, url_tail, tail_complete, f_{{data.file_hash}}_s, sizeof(f_{{data.file_hash}}_s), m_{{data.mime_hash}}); }
+{%- endif %}
+{%- endfor %}
+
+// DYNAMIC PAGES
+{%- for file, data in fileData.items() %}
+{%- if data.file_type == 2 %}
+namespace f_{{data.file_hash}} 
+{
+  {{data.file_content}}
+}
+{% endif %}
+{%- endfor %}
