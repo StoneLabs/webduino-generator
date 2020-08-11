@@ -27,3 +27,6 @@ def get_files_rec(parent):
 
             files.add(rel_file)
     return files
+
+def shorten(text, maxLength):
+    return str(text)[:maxLength] + ("..." if maxLength < len(str(text)) else "")

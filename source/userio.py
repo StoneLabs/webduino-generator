@@ -7,6 +7,7 @@ from rich import box
 
 class UserIO:
     console = Console()
+    console._log_render.show_time = False
     verbose = False
 
     def __out__(self, *args):
