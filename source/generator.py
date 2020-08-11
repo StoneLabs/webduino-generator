@@ -5,8 +5,8 @@ import shutil
 import os
 
 from userio import UserIO
-from helper import cpp_str_esc, cpp_img_esc
-from rich.table import Table
+from helper import cpp_str_esc, cpp_img_esc, get_files_rec
+from jinja2 import Template
 from rich.traceback import install
 from rich.progress import Progress, BarColumn, TextColumn
 install()
@@ -92,46 +92,41 @@ args.ssid, args.ssid_pass = userio.getUserPass("Please enter network credentials
 #
 userio.section("Processing input files...")
 
-# Template strings for replacement
-# The following patterns should be available (file_name, mime and content encoded as needed)
-# {file_name} {file_hash} {file_content} {mime_hash} {mime}
-
-template_str_add_index   = "\twebserver.setDefaultCommand(&f_{file_hash});\n\n"
-template_str_add_static  = "\twebserver.addCommand(\"{file_name}\", &f_{file_hash});\n"
-template_str_add_dynamic = "\twebserver.addCommand(\"{file_name}\", &f_{file_hash}::respond);\n"
-template_str_def_mime    = "static const char m_{mime_hash}[] = \"{mime}\";\n"
-template_str_def_dynamic = "namespace f_{file_hash} {{\n\t{file_content}\n}}\n\n"
-template_str_def_static  = "static const unsigned char f_{file_hash}_s[] PROGMEM = {file_content};\n" + \
-                           "inline void f_{file_hash} (WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)" + \
-                           "{{ staticResponder(server, type, url_tail, tail_complete, f_{file_hash}_s, m_{mime_hash}); }}\n"
-template_str_def_staticb = "static const unsigned char f_{file_hash}_s[] PROGMEM = {file_content};\n" + \
-                           "inline void f_{file_hash} (WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)" + \
-                           "{{ staticResponder(server, type, url_tail, tail_complete, f_{file_hash}_s, sizeof(f_{file_hash}_s), m_{mime_hash}); }}\n"
-
 # Get list of all files
-files = set()
-for dir_, _, files_ in os.walk(args.input):
-    for file_name in files_:
-        rel_dir = os.path.relpath(dir_, args.input)
-        rel_file = os.path.join(rel_dir, file_name)
-
-        rel_file = rel_file.replace("\\","/")
-        if rel_file.startswith("./"):
-            rel_file = rel_file[2:]
-
-        files.add(rel_file)
-
+files = get_files_rec(args.input)
 userio.print("Processing " + str(len(files)) + " files...", verbose=True)
 
-# Strings to build
-mimes = {}
-commands_add = ""
-commands_def_static = ""
-commands_def_dynamic = ""
-commands_def_mimes = ""
+# Data input functions
+def _addFile(container):
+    def inner(file_name, file_hash, mime, mime_hash, file_content, file_type):
+        entry = {
+            "file_hash": file_hash,
+            "mime": mime,
+            "mime_hash": mime_hash,
+            "file_content": file_content,
+            "file_type": file_type
+        }
+        container[file_name] = entry
+        return container
 
-files_verbose = []
-progress_current = TextColumn("Test")
+    return inner
+
+def _addMime(container):
+    def inner(mime, mime_hash):
+        container[mime] = mime_hash
+        return container
+
+    return inner
+
+# Structure to hold the read information
+fileData = {}
+addFile = _addFile(fileData)
+
+mimeData = {}
+addMime = _addMime(mimeData)
+
+# Process files
+progress_current = TextColumn("Initializing...")
 with Progress(BarColumn(),
               "[progress.percentage]{task.percentage:>3.1f}%",
               "[progress.description]{task.description}") as progress:
@@ -152,41 +147,41 @@ with Progress(BarColumn(),
 
         mime_hash = hashlib.sha1(mime.encode("UTF-8")).hexdigest()
         mime_hash = mime_hash[:10]
-        mimes[mime_hash] = mime
 
         # Get file hash
         file_hash = hashlib.sha1(file_name.encode("UTF-8")).hexdigest()
         file_hash = file_hash[:10]
 
-        # Save file for verbose table after processing all files
-        files_verbose += [[file_name, file_hash, mime, mime_hash]]
-
-        # Create string replace dict
-        replacer = {"file_name": file_name, "file_hash": file_hash, "mime_hash": mime_hash}
-
-        # Set default action for index.html
-        if (file_name == "index.html"):
-                commands_add = template_str_add_index.format(**replacer) + commands_add
+        # Variable to hold file content
+        file_content = ""
+        file_type = 0
 
         try:
             # Try to handle file non-binary UTF-8 file.
             with open(os.path.join(args.input, file_name), 'r', encoding="UTF-8") as file:
                 if (file_name.endswith(".cpp")):
                     # Handle dynamic content (cpp files)
-                    replacer["file_content"] = file.read().replace("\n", "\n\t")
-                    commands_add += template_str_add_dynamic.format(**replacer)
-                    commands_def_dynamic += template_str_def_dynamic.format(**replacer)
+                    file_content = file.read().replace("\n", "\n\t")
+                    file_type = 2 # Dynamic content
                 else:
                     # Normal static page
-                    replacer["file_content"] = cpp_str_esc(file.read())
-                    commands_add += template_str_add_static.format(**replacer)
-                    commands_def_static += template_str_def_static.format(**replacer)
+                    file_content = cpp_str_esc(file.read())
         except UnicodeDecodeError:
-            # Encode as binary if UTF-8 failes
+            # Encode as binary if UTF-8 fails
             with open(os.path.join(args.input, file_name), 'rb') as file:
-                replacer["file_content"] = cpp_img_esc(file)
-                commands_add += template_str_add_static.format(**replacer)
-                commands_def_static += template_str_def_staticb.format(**replacer)
+                file_content = cpp_img_esc(file)
+                file_type = 1 # Binary content
+
+        # Save file for processing after all files were read
+        addFile(cpp_str_esc(file_name), 
+                file_hash, 
+                cpp_str_esc(mime), 
+                mime_hash, 
+                file_content, 
+                file_type)
+
+        addMime(cpp_str_esc(mime),
+                mime_hash)
 
         # Update progress bar
         progress.update(task1, advance=1)
@@ -194,55 +189,65 @@ with Progress(BarColumn(),
     # All files processed
     progress.tasks[task1].description = "Done"
 
-# Print table of all files processed
-userio.print("Listing processed files:", verbose=True)
-userio.quickTable("",
-                  ["File name", "File hash", "File MIME", "MIME hash"],
-                  files_verbose, verbose=True)
+# Print table of all files processed (TODO rewrite)
+#userio.print("Listing processed files:", verbose=True)
+#userio.quickTable("",
+#                  ["File name", "File hash", "File MIME", "MIME hash"],
+#                  files_verbose, verbose=True)
 
-userio.print("Processing " + str(len(mimes)) + " mimes.", verbose=True)
-for m_hash in mimes:
-    replacer = {"mime_hash" : m_hash, "mime": mimes[m_hash]}
-    commands_def_mimes += template_str_def_mime.format(**replacer)
+userio.print("Preparing misc. data")
+
+metaData = {
+    "ssid": cpp_str_esc(args.ssid),
+    "pass": cpp_str_esc(args.ssid_pass),
+    "port": str(args.port)
+}
+
+userio.print(fileData, verbose=True)
+userio.print(mimeData, verbose=True)
+userio.print(metaData, verbose=True)
 
 userio.section("Writing program files...")
-userio.print("( 0/ 3) main/")
+userio.print("Creating output folder")
+
+outputFolder = os.path.join(args.output, "main/")
 try:
-    os.mkdir(os.path.join(args.output, "main/"))
+    os.mkdir(outputFolder)
 except OSError:
     userio.error("Could not create output directory!")
 
-userio.print("( 1/ 3) main.ino")
+userio.print("Processing templates")
 
-with open(os.path.join(args.template, "main.wifi.ino"), 'r') as file:
-    data = file.read()
-    data = data.replace("__SSID__", cpp_str_esc(args.ssid))
-    data = data.replace("__PASS__", cpp_str_esc(args.ssid_pass))
-    data = data.replace("__PORT__", str(args.port))
+# Get list of all template files
+files = get_files_rec(args.template)
+userio.print("Processing " + str(len(files)) + " template files...", verbose=True)
 
-    data = data.replace("__COMMANDS_ADD__", commands_add)
+# Process each file
+progress_current = TextColumn("Initializing...")
+with Progress(BarColumn(),
+              "[progress.percentage]{task.percentage:>3.1f}%",
+              "[progress.description]{task.description}") as progress:
+    task1 = progress.add_task("Converting", total=len(files), start=True)
 
-    text_file = open(os.path.join(args.output, "main/", "main.ino"), "w")
-    text_file.write(data)
-    text_file.close()
+    for file_name in files:
+        # Update progress bar
+        progress.tasks[task1].description = file_name
 
-userio.print("( 2/ 3) WebServer.h")
+        # Get input and output path
+        file_name_input = os.path.join(args.template, file_name)
+        file_name_output = os.path.join(outputFolder, file_name)
 
-with open(os.path.join(args.template, "WebServer.wifi.h"), 'r') as file:
-    data = file.read()
-    text_file = open(os.path.join(args.output, "main/", "WebServer.h"), "w")
-    text_file.write(data)
-    text_file.close()
+        # Open handles for input and output files
+        with open(file_name_input, "r") as file_input, \
+             open(file_name_output, "w") as file_output:
+            # Apply jinja2 processing and write processed file to output          
+            template = Template(file_input.read())
+            file_output.write(template.render(fileData=fileData, 
+                                              mimeData=mimeData, 
+                                              metaData=metaData))
 
-userio.print("( 3/ 3) commands.h")
+        # Update progress bar
+        progress.update(task1, advance=1)
 
-with open(os.path.join(args.template + "commands.h"), 'r') as file:
-    data = file.read()
-
-    data = data.replace("__COMMANDS_DEF_MIMES__", commands_def_mimes)
-    data = data.replace("__COMMANDS_DEF_STATIC__", commands_def_static)
-    data = data.replace("__COMMANDS_DEF_DYNAMIC__", commands_def_dynamic)
-    
-    text_file = open(os.path.join(args.output, "main/", "commands.h"), "w")
-    text_file.write(data)
-    text_file.close()
+    # All files processed
+    progress.tasks[task1].description = "Done"

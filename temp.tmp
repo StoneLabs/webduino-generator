@@ -1,0 +1,16 @@
+
+# Template strings for replacement
+# The following patterns should be available (file_name, mime and content encoded as needed)
+# {file_name} {file_hash} {file_content} {mime_hash} {mime}
+
+template_str_add_index   = "\twebserver.setDefaultCommand(&f_{file_hash});\n\n"
+template_str_add_static  = "\twebserver.addCommand(\"{file_name}\", &f_{file_hash});\n"
+template_str_add_dynamic = "\twebserver.addCommand(\"{file_name}\", &f_{file_hash}::respond);\n"
+template_str_def_mime    = "static const char m_{mime_hash}[] = \"{mime}\";\n"
+template_str_def_dynamic = "namespace f_{file_hash} {{\n\t{file_content}\n}}\n\n"
+template_str_def_static  = "static const unsigned char f_{file_hash}_s[] PROGMEM = {file_content};\n" + \
+                           "inline void f_{file_hash} (WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)" + \
+                           "{{ staticResponder(server, type, url_tail, tail_complete, f_{file_hash}_s, m_{mime_hash}); }}\n"
+template_str_def_staticb = "static const unsigned char f_{file_hash}_s[] PROGMEM = {file_content};\n" + \
+                           "inline void f_{file_hash} (WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)" + \
+                           "{{ staticResponder(server, type, url_tail, tail_complete, f_{file_hash}_s, sizeof(f_{file_hash}_s), m_{mime_hash}); }}\n"
