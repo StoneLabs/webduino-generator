@@ -5,7 +5,7 @@ import shutil
 import os
 
 from userio import UserIO
-from helper import cpp_str_esc, cpp_img_esc, get_files_rec
+from helper import cpp_str_esc, cpp_img_esc, get_files_rec, shorten
 from jinja2 import Template
 from rich.traceback import install
 from rich.progress import Progress, BarColumn, TextColumn
@@ -105,6 +105,9 @@ userio.section("Processing input files...")
 # Get list of all files
 files = get_files_rec(args.input)
 userio.print("Processing " + str(len(files)) + " files...", verbose=True)
+userio.quickTable("",
+                  ["Input Files"],
+                  [[_file] for _file in files], verbose=True)
 
 # Data input functions
 def _addFile(container):
@@ -113,8 +116,8 @@ def _addFile(container):
             "file_hash": file_hash,
             "mime": mime,
             "mime_hash": mime_hash,
-            "file_content": file_content,
-            "file_type": file_type
+            "file_type": file_type,
+            "file_content": file_content
         }
         container[file_name] = entry
         return container
@@ -199,38 +202,46 @@ with Progress(BarColumn(),
     # All files processed
     progress.tasks[task1].description = "Done"
 
-# Print table of all files processed (TODO rewrite)
-#userio.print("Listing processed files:", verbose=True)
-#userio.quickTable("",
-#                  ["File name", "File hash", "File MIME", "MIME hash"],
-#                  files_verbose, verbose=True)
-
-userio.print("Preparing misc. data")
-
+# Pack misc data for jinja2
+userio.print("Preparing misc. data...", verbose=True)
 metaData = {
     "ssid": cpp_str_esc(args.ssid),
     "pass": cpp_str_esc(args.ssid_pass),
     "port": str(args.port)
 }
 
-userio.print(fileData, verbose=True)
-userio.print(mimeData, verbose=True)
-userio.print(metaData, verbose=True)
+# Print all data that can be used in jinja2 files processed (TODO rewrite)
+userio.print("\nListing data available to the templates:", verbose=True)
+userio.quickTable("fileData",
+                  ["File name", "File hash", "File MIME", "MIME hash", "File type", "File content"],
+                  [[file_name, *[shorten(value, 100) for value in file_data.values()]] for (file_name,file_data) in fileData.items()], verbose=True)
 
+userio.quickTable("mimeData",
+                  ["MIME", "MIME hash"],
+                  mimeData.items(), verbose=True)
+
+userio.quickTable("metaData",
+                  ["Key", "Value"],
+                  metaData.items(), verbose=True)
+
+# Now, find and process Template files
 userio.section("Writing program files...")
-userio.print("Creating output folder")
+userio.print("Creating output folder", verbose=True)
 
+# Prepare output folder
 outputFolder = os.path.join(args.output, "main/")
 try:
     os.mkdir(outputFolder)
 except OSError:
     userio.error("Could not create output directory!")
 
-userio.print("Processing templates")
-
 # Get list of all template files
 files = get_files_rec(args.template)
 userio.print("Processing " + str(len(files)) + " template files...", verbose=True)
+
+userio.quickTable("",
+                  ["Template Files"],
+                  [[_file] for _file in files], verbose=True)
 
 # Process each file
 progress_current = TextColumn("Initializing...")
