@@ -184,51 +184,7 @@ def generate_from_template(userio, template_path, output_path,
         # All files processed
         progress.tasks[task1].description = "Done"
 
-def main():
-    install_traceback()
-    userio = UserIO()
-
-    #
-    # Parser input
-    #
-    parser = argparse.ArgumentParser(description="Webduino source builder")
-
-    parser.add_argument("input", metavar="input", type=str, 
-                        help="Input folder")
-    parser.add_argument("-t", "--template", metavar="folder", type=str,
-                        default="", dest='template',
-                        help="location of the template folder (build in is used if no path is supplied)")
-    parser.add_argument("-s", "--ssid", metavar="ssid", type=str,
-                        default="", dest='ssid',
-                        help="SSID of network")
-    parser.add_argument("-p", "--port", metavar="port", type=int,
-                        default=80, dest='port',
-                        help="Port of webserver")
-    parser.add_argument("-m", "--mode", metavar="mode", type=str,
-                        default="wifinina", dest='mode',
-                        help="Connection mode/library to be used")
-    parser.add_argument("-v", "--verbose", 
-                        action="store_true", dest='verbose',
-                        help="Enable verbose output")
-    parser.add_argument("-q", "--quiet", 
-                        action="store_true", dest='quiet',
-                        help="Hides password warning")
-    parser.add_argument("-o", "--output", metavar="folder", type=str,
-                        default=".", dest='output',
-                        help="location of the output folder (default: ./output/)")
-           
-    #
-    # Check arguments
-    #
-    args = parser.parse_args()
-    userio.verbose = args.verbose
-
-    userio.print("[bold]Stone Labs. Webduino Gernerator\n")
-
-    userio.print("Dumping arguments", verbose=True)
-    userio.quickTable("", ["Argument", "Value"],
-                    [[arg, getattr(args, arg)] for arg in vars(args)],
-                    verbose=True)
+def command_generate(userio, args):
 
     # Check input
     if not os.path.isdir(args.input):
@@ -302,6 +258,85 @@ def main():
     userio.section("Writing program files...")
     generate_from_template(userio, args.template, args.output,
                            file_data, mime_data, meta_data)
+
+def main():
+    install_traceback()
+    userio = UserIO()
+
+    #s
+    # Parser input
+    #
+    parser = argparse.ArgumentParser(prog="webduino-generator",
+                                     description="Webduino source builder")
+    # Global arguments
+    parser.add_argument("-v", "--verbose", 
+                        action="store_true", dest='verbose',
+                        help="Enable verbose output")
+
+
+    subparsers = parser.add_subparsers(dest="command")
+
+    parser_generate = subparsers.add_parser("generate", help="Generate Arduino code from input folder without a project")
+    parser_generate.add_argument("input", metavar="input", type=str, 
+                        help="Input folder")
+    parser_generate.add_argument("-t", "--template", metavar="folder", type=str,
+                        default="", dest='template',
+                        help="location of the template folder (build in is used if no path is supplied)")
+    parser_generate.add_argument("-s", "--ssid", metavar="ssid", type=str,
+                        default="", dest='ssid',
+                        help="SSID of network")
+    parser_generate.add_argument("-p", "--port", metavar="port", type=int,
+                        default=80, dest='port',
+                        help="Port of webserver")
+    parser_generate.add_argument("-m", "--mode", metavar="mode", type=str,
+                        default="wifinina", dest='mode',
+                        help="Connection mode/library to be used")
+    parser_generate.add_argument("-q", "--quiet", 
+                        action="store_true", dest='quiet',
+                        help="Hides password warning")
+    parser_generate.add_argument("-o", "--output", metavar="folder", type=str,
+                        default=".", dest='output',
+                        help="location of the output folder (default: ./output/)")
+           
+    
+    parser_init = subparsers.add_parser("init", help="Create new project in current working directory")
+    parser_build = subparsers.add_parser("build", help="Generate Arduino code from current project")
+    parser_compile = subparsers.add_parser("compile", help="Compile Arduino code from current project")
+    parser_upload = subparsers.add_parser("upload", help="Upload Arduino code from current project")
+    parser_open = subparsers.add_parser("open", help="Open generated code in arduino ide")
+    parser_version = subparsers.add_parser("version", help="Display current version")
+    #
+    # Check arguments
+    #
+    args = parser.parse_args()
+    userio.verbose = args.verbose
+
+    userio.print("[bold]Stone Labs. Webduino Gernerator\n")
+
+    userio.print("Dumping arguments", verbose=True)
+    userio.quickTable("", ["Argument", "Value"],
+                    [[arg, getattr(args, arg)] for arg in vars(args)],
+                    verbose=True)
+
+    # Check command
+    if args.command == None:
+        userio.error("No command specified!")
+    elif args.command == "version":
+        raise NotImplementedError
+    elif args.command == "init":
+        raise NotImplementedError
+    elif args.command == "build":
+        raise NotImplementedError
+    elif args.command == "compile":
+        raise NotImplementedError
+    elif args.command == "upload":
+        raise NotImplementedError
+    elif args.command == "open":
+        raise NotImplementedError
+    elif args.command == "generate":
+        command_generate(userio, args)
+    else:
+        userio.error("Unknown command. This should never happen!")
 
 if __name__ == "__main__":
     main()
