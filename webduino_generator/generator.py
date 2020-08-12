@@ -4,8 +4,8 @@ import hashlib
 import shutil
 import os
 
-from userio import UserIO
-from helper import cpp_str_esc, cpp_img_esc, get_files_rec, shorten
+from .userio import UserIO
+from .helper import cpp_str_esc, cpp_img_esc, get_files_rec, shorten
 from jinja2 import Template
 from rich.traceback import install as install_traceback
 from rich.progress import Progress, BarColumn, TextColumn
@@ -196,8 +196,8 @@ def main():
     parser.add_argument("input", metavar="input", type=str, 
                         help="Input folder")
     parser.add_argument("-t", "--template", metavar="folder", type=str,
-                        default="./templates/", dest='template',
-                        help="location of the template folder (default: ./templates/)")
+                        default="", dest='template',
+                        help="location of the template folder (build in is used if no path is supplied)")
     parser.add_argument("-s", "--ssid", metavar="ssid", type=str,
                         default="", dest='ssid',
                         help="SSID of network")
@@ -214,7 +214,7 @@ def main():
                         action="store_true", dest='quiet',
                         help="Hides password warning")
     parser.add_argument("-o", "--output", metavar="folder", type=str,
-                        default="./output/", dest='output',
+                        default=".", dest='output',
                         help="location of the output folder (default: ./output/)")
            
     #
@@ -251,6 +251,10 @@ def main():
         userio.error("Invalid input path!")
 
     # Check templates folder
+    if args.template == "":
+        install_dir = os.path.dirname(os.path.realpath(__file__))
+        args.template = os.path.join(install_dir, "templates")
+        userio.print("Using build in template files at " + args.template, verbose=True)
     if not os.path.isdir(args.template):
         userio.error("Invalid template path!")
 

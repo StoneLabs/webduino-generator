@@ -8,7 +8,8 @@ Also supports coding cpp functions inside the website files (see input/*.cpp) fo
 ```
 $ git clone https://github.com/StoneLabs/webduino-generator
 $ cd webduino-generator/
-$ python source/generator.py input
+$ pip install .
+$ webduino-generator input
 $ arduino output/main/main.ino
 
 Or use arduino-cli to compile and upload directly from the shell (linux only)
