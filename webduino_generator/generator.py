@@ -276,6 +276,7 @@ def main():
     #
     userio.section("Processing misc. data...")
     meta_data = {
+        "mode": cpp_str_esc(args.mode),
         "ssid": cpp_str_esc(args.ssid),
         "pass": cpp_str_esc(args.ssid_pass),
         "port": str(args.port)
