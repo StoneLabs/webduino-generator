@@ -4,6 +4,7 @@ import hashlib
 import shutil
 import os
 
+from .__init__ import __version__
 from .userio import UserIO
 from .helper import cpp_str_esc, cpp_img_esc, get_files_rec, shorten
 from jinja2 import Template
@@ -259,6 +260,9 @@ def command_generate(userio, args):
     generate_from_template(userio, args.template, args.output,
                            file_data, mime_data, meta_data)
 
+def command_version(userio, args):
+    userio.print("Current version: " + __version__)
+
 def main():
     install_traceback()
     userio = UserIO()
@@ -322,7 +326,7 @@ def main():
     if args.command == None:
         userio.error("No command specified!")
     elif args.command == "version":
-        raise NotImplementedError
+        command_version(userio, args)
     elif args.command == "init":
         raise NotImplementedError
     elif args.command == "build":
