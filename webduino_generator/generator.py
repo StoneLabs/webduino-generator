@@ -263,7 +263,7 @@ def main():
         userio.error("Can't continue with existing output folder")
         exit(1)
     
-    args.ssid, args.ssid_pass = get_ssid_pass(userio, not args.quiet)
+    args.ssid, args.ssid_pass = get_ssid_pass(userio, args.quiet)
 
     #
     # Process input
