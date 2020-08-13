@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='webduino-generator',
-    version='0.3',
+    version='0.4',
     license='UNLICENSE',
     url='https://github.com/StoneLabs/webduino-generator',
     author='Levy Ehrstein',
