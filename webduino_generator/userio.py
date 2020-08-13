@@ -6,6 +6,17 @@ from rich.table import Table
 from rich import box
 
 
+def get_ssid_pass(userio, ssid, no_warn):
+    # Get SSID and password for wifi connection
+    if not no_warn:
+        userio.warn("SSID and Password will be saved as plaintext in the output!")
+    if ssid == "":
+        ssid = userio.get_user("Please enter network credentials:", "SSID: ")
+        return ssid, userio.get_pass(None, "Password: ")
+    else:
+        return ssid, userio.get_pass("Please enter network credentials:\nSSID: " + ssid, "Password: ")
+
+
 class UserIO:
     console = Console()
     console._log_render.show_time = False

@@ -1,20 +1,9 @@
 import argparse
 
-from .userio import UserIO
+from .userio import UserIO, get_ssid_pass
 from .helper import cpp_str_esc, cpp_img_esc, get_files_rec, shorten
-from .project import project_make_new
+from .project import project_make_new, project_generate
 from .generator import *
-
-
-def get_ssid_pass(userio, ssid, no_warn):
-    # Get SSID and password for wifi connection
-    if not no_warn:
-        userio.warn("SSID and Password will be saved as plaintext in the output!")
-    if ssid == "":
-        ssid = userio.get_user("Please enter network credentials:", "SSID: ")
-        return ssid, userio.get_pass(None, "Password: ")
-    else:
-        return ssid, userio.get_pass("Please enter network credentials:\nSSID: " + ssid, "Password: ")
 
 
 def command_version(userio, args):
@@ -42,9 +31,9 @@ def command_generate(userio, args):
     # Pack meta data
     userio.section("Processing misc. data...")
     meta_data = {
-        "mode": cpp_str_esc(args.mode),
-        "ssid": cpp_str_esc(args.ssid),
-        "pass": cpp_str_esc(args.ssid_pass),
+        "mode": args.mode,
+        "ssid": args.ssid,
+        "pass": args.ssid_pass,
         "port": str(args.port)
     }
 
@@ -58,7 +47,7 @@ def command_init(userio, args):
 
 
 def command_build(userio, args):
-    raise NotImplementedError
+    project_generate(userio, args.target, args.quiet)
 
 
 def main():
@@ -113,6 +102,9 @@ def main():
                              help="Delete files that block project creation.")
 
     parser_build = subparsers.add_parser("build", help="Generate Arduino code from current project")
+    parser_build.add_argument("target", metavar="target", type=str,
+                              default=".", nargs="?",
+                              help="Target folder where project will be created")
     parser_build.add_argument("-q", "--quiet",
                               action="store_true", dest='quiet',
                               help="Hides password warning")
