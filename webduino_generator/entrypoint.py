@@ -1,8 +1,8 @@
 import argparse
-import configparser
 
 from .userio import UserIO
 from .helper import cpp_str_esc, cpp_img_esc, get_files_rec, shorten
+from .project import project_make_new
 from .generator import *
 
 
@@ -41,74 +41,8 @@ def command_generate(userio, args):
     generate(userio, args.input, args.output, args.template, meta_data)
 
 
-def command_init(userio, project_path, delete_block):
-    userio.section("Generating hello world project")
-
-    if not os.path.exists(project_path):
-        userio.error("Path " + project_path + " is invalid or does not exist!")
-
-    if len(get_files_rec(project_path)) > 0:
-        userio.warn("Target folder (%s) is not empty!"
-                    % os.path.abspath(project_path))
-
-        userio.warn("Data will %sbe deleted by this action!"
-                    % ("" if delete_block else "not "))
-
-        userio.print("Press Enter to continue anyway. Ctrl+C to cancel!")
-        try:
-            input()
-        except KeyboardInterrupt:
-            return
-
-    path_input = os.path.join(project_path, "input")
-    path_template = os.path.join(project_path, "template")
-    path_template_src = get_template_path()
-
-    path_config = os.path.join(project_path, ".webduino-generator")
-    path_config_file = os.path.join(project_path, "project.cfg")
-
-    def delete_file_or_folder(target):
-        if os.path.isfile(target):
-            os.remove(target)
-        else:
-            shutil.rmtree(target)
-
-    # Check before we start
-    if os.path.exists(path_config):
-        if delete_block:
-            delete_file_or_folder(path_config)
-        else:
-            userio.error("Config folder " + path_config + " exists! Is there already a project here?")
-
-    if os.path.exists(path_config_file):
-        if delete_block:
-            delete_file_or_folder(path_config_file)
-        else:
-            userio.error("Project file " + path_config_file + " exists! Is there already a project here?")
-
-    userio.print("Creating project files")
-    os.mkdir(path_config)
-    with open(path_config_file, "w") as config_file:
-        config_file.write("todo")
-
-    def copy_tree_if_not_exists(src, target, name):
-        if os.path.exists(target) and delete_block:
-            delete_file_or_folder(target)
-        if os.path.isfile(target):
-            userio.error(name + " exists and is file!")
-        if os.path.isdir(target):
-            userio.warn(name + " exists! Do nothing!")
-            return
-        shutil.copytree(src, target)
-
-    userio.print("Creating input files")
-    copy_tree_if_not_exists(get_demo_path(), path_input, "Input folder")
-
-    userio.print("Creating template files")
-    copy_tree_if_not_exists(get_template_path(), path_template, "Template folder")
-
-    userio.section("Project created successfully.")
-    userio.print("Use 'webduino-generator build' to build your project.")
+def command_init(userio, args):
+    project_make_new(userio, args.target, args.force)
 
 
 def main():
@@ -176,8 +110,8 @@ def main():
 
     userio.print("Dumping arguments", verbose=True)
     userio.quick_table("", ["Argument", "Value"],
-                      [[arg, getattr(args, arg)] for arg in vars(args)],
-                      verbose=True)
+                       [[arg, getattr(args, arg)] for arg in vars(args)],
+                       verbose=True)
 
     # Check command
     if args.command is None:
@@ -185,7 +119,7 @@ def main():
     elif args.command == "version":
         command_version(userio, args)
     elif args.command == "init":
-        command_init(userio, args.target, args.force)
+        command_init(userio, args)
     elif args.command == "build":
         raise NotImplementedError
     elif args.command == "compile":
