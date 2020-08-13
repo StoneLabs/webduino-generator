@@ -6,7 +6,7 @@ from .__init__ import __version__
 from .userio import UserIO, get_ssid_pass
 from .helper import cpp_str_esc, cpp_img_esc, get_files_rec, shorten, get_tool
 from .project import project_make_new, project_generate, project_get_sketch
-from .arduinocli import sketch_compile
+from .arduinocli import sketch_compile, sketch_upload
 from .generator import *
 
 
@@ -89,6 +89,17 @@ def command_compile(userio, args):
     sketch_compile(userio, sketch_path)
 
 
+def command_upload(userio, args):
+    userio.section("Uploading project output")
+
+    # Get project output location
+    sketch_path = project_get_sketch(userio, args.target)
+    userio.print("Sketch located: " + sketch_path, verbose=True)
+
+    # Compile sketch using arduino-cli
+    sketch_upload(userio, sketch_path)
+
+
 def main():
     install_traceback()
     userio = UserIO()
@@ -160,8 +171,12 @@ def main():
     parser_compile.add_argument("target", metavar="target", type=str,
                                 default=".", nargs="?",
                                 help="Root folder of target project")
-    
+
     parser_upload = subparsers.add_parser("upload", help="Upload Arduino code from current project")
+    parser_upload.add_argument("target", metavar="target", type=str,
+                               default=".", nargs="?",
+                               help="Root folder of target project")
+
     parser_version = subparsers.add_parser("version", help="Display current version")
 
     # Global arguments
@@ -198,7 +213,7 @@ def main():
         elif args.command == "compile":
             command_compile(userio, args)
         elif args.command == "upload":
-            raise NotImplementedError
+            command_upload(userio, args)
         elif args.command == "open":
             command_open(userio, args)
         elif args.command == "generate":
