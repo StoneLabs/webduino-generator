@@ -1,5 +1,4 @@
-import mimetypes 
-import argparse
+import mimetypes
 import hashlib
 import shutil
 import os
@@ -11,12 +10,22 @@ from rich.traceback import install as install_traceback
 from rich.progress import Progress, BarColumn, TextColumn
 
 
-def clearOutput(userio, output_path):
+def get_template_path():
+    install_dir = os.path.dirname(os.path.realpath(__file__))
+    return os.path.join(install_dir, "templates")
+
+
+def get_demo_path():
+    install_dir = os.path.dirname(os.path.realpath(__file__))
+    return os.path.join(install_dir, "demo")
+
+
+def delete_folder_safe(userio, output_path):
     # Deletes folder after user confirmation
     # returns False on failure
     if os.path.exists(output_path):
         folder = os.path.abspath(output_path)
-        userio.warn("Output folder " + folder + " exists!")
+        userio.warn("Folder " + folder + " exists!")
         userio.print("Press Enter to delete. Ctrl+C to cancel!")
         try:
             input()
@@ -26,19 +35,13 @@ def clearOutput(userio, output_path):
             return False
     return True
 
-def get_ssid_pass(userio, no_warn):
-    # Get SSID and password for wifi connection
-    if not no_warn:
-        userio.warn("SSID and Password will be saved as plaintext in the output!")
-    return userio.getUserPass("Please enter network credentials:", "SSID: ", "Password: ")
 
 def get_input_data(userio, input_path):
     # Get list of all files
     files = get_files_rec(input_path)
     userio.print("Processing " + str(len(files)) + " files...", verbose=True)
-    userio.quickTable("",
-                    ["Input Files"],
-                    [[_file] for _file in files], verbose=True)
+    userio.quick_table("", ["Input Files"],
+                       [[_file] for _file in files], verbose=True)
 
     # Data input functions
     def _addFile(container):
@@ -72,8 +75,8 @@ def get_input_data(userio, input_path):
     # Process files
     progress_current = TextColumn("Initializing...")
     with Progress(BarColumn(),
-                "[progress.percentage]{task.percentage:>3.1f}%",
-                "[progress.description]{task.description}") as progress:
+                  "[progress.percentage]{task.percentage:>3.1f}%",
+                  "[progress.description]{task.description}") as progress:
         task1 = progress.add_task("Converting", total=len(files), start=True)
 
         for file_name in files:
@@ -86,7 +89,7 @@ def get_input_data(userio, input_path):
             # https://stackoverflow.com/questions/1176022/unknown-file-type-mime
             # Not generating a Content-Type header entry would be the best solution
             # but is not feasible with the current system
-            if mime == None:
+            if mime is None:
                 mime = "application/octet-stream"
 
             mime_hash = hashlib.sha1(mime.encode("UTF-8")).hexdigest()
@@ -106,7 +109,7 @@ def get_input_data(userio, input_path):
                     if (file_name.endswith(".cpp")):
                         # Handle dynamic content (cpp files)
                         file_content = file.read().replace("\n", "\n\t")
-                        file_type = 2 # Dynamic content
+                        file_type = 2  # Dynamic content
                     else:
                         # Normal static page
                         file_content = cpp_str_esc(file.read())
@@ -114,14 +117,14 @@ def get_input_data(userio, input_path):
                 # Encode as binary if UTF-8 fails
                 with open(os.path.join(input_path, file_name), 'rb') as file:
                     file_content = cpp_img_esc(file)
-                    file_type = 1 # Binary content
+                    file_type = 1  # Binary content
 
             # Save file for processing after all files were read
-            addFile(cpp_str_esc(file_name), 
-                    file_hash, 
-                    cpp_str_esc(mime), 
-                    mime_hash, 
-                    file_content, 
+            addFile(cpp_str_esc(file_name),
+                    file_hash,
+                    cpp_str_esc(mime),
+                    mime_hash,
+                    file_content,
                     file_type)
 
             addMime(cpp_str_esc(mime),
@@ -135,7 +138,8 @@ def get_input_data(userio, input_path):
 
     return fileData, mimeData
 
-def generate_from_template(userio, template_path, output_path, 
+
+def generate_from_template(userio, template_path, output_path,
                            file_data, mime_data, meta_data):
     userio.print("Creating output folder", verbose=True)
 
@@ -150,15 +154,15 @@ def generate_from_template(userio, template_path, output_path,
     files = get_files_rec(template_path)
     userio.print("Processing " + str(len(files)) + " template files...", verbose=True)
 
-    userio.quickTable("",
-                    ["Template Files"],
-                    [[_file] for _file in files], verbose=True)
+    userio.quick_table("",
+                       ["Template Files"],
+                       [[_file] for _file in files], verbose=True)
 
     # Process each file
     progress_current = TextColumn("Initializing...")
     with Progress(BarColumn(),
-                "[progress.percentage]{task.percentage:>3.1f}%",
-                "[progress.description]{task.description}") as progress:
+                  "[progress.percentage]{task.percentage:>3.1f}%",
+                  "[progress.description]{task.description}") as progress:
         task1 = progress.add_task("Converting", total=len(files), start=True)
 
         for file_name in files:
@@ -171,11 +175,12 @@ def generate_from_template(userio, template_path, output_path,
 
             # Open handles for input and output files
             with open(file_name_input, "r") as file_input, \
-                open(file_name_output, "w") as file_output:
-                # Apply jinja2 processing and write processed file to output          
+                 open(file_name_output, "w") as file_output:
+
+                # Apply jinja2 processing and write processed file to output
                 template = Template(file_input.read())
-                file_output.write(template.render(fileData=file_data, 
-                                                  mimeData=mime_data, 
+                file_output.write(template.render(fileData=file_data,
+                                                  mimeData=mime_data,
                                                   metaData=meta_data))
 
             # Update progress bar
@@ -184,123 +189,65 @@ def generate_from_template(userio, template_path, output_path,
         # All files processed
         progress.tasks[task1].description = "Done"
 
-def main():
-    install_traceback()
-    userio = UserIO()
 
-    #
-    # Parser input
-    #
-    parser = argparse.ArgumentParser(description="Webduino source builder")
+def generate(userio, input_path, output_path, template_path,
+             meta_data):
 
-    parser.add_argument("input", metavar="input", type=str, 
-                        help="Input folder")
-    parser.add_argument("-t", "--template", metavar="folder", type=str,
-                        default="", dest='template',
-                        help="location of the template folder (build in is used if no path is supplied)")
-    parser.add_argument("-s", "--ssid", metavar="ssid", type=str,
-                        default="", dest='ssid',
-                        help="SSID of network")
-    parser.add_argument("-p", "--port", metavar="port", type=int,
-                        default=80, dest='port',
-                        help="Port of webserver")
-    parser.add_argument("-m", "--mode", metavar="mode", type=str,
-                        default="wifinina", dest='mode',
-                        help="Connection mode/library to be used")
-    parser.add_argument("-v", "--verbose", 
-                        action="store_true", dest='verbose',
-                        help="Enable verbose output")
-    parser.add_argument("-q", "--quiet", 
-                        action="store_true", dest='quiet',
-                        help="Hides password warning")
-    parser.add_argument("-o", "--output", metavar="folder", type=str,
-                        default=".", dest='output',
-                        help="location of the output folder (default: ./output/)")
-           
-    #
-    # Check arguments
-    #
-    args = parser.parse_args()
-    userio.verbose = args.verbose
-
-    userio.print("[bold]Stone Labs. Webduino Gernerator\n")
-
-    userio.print("Dumping arguments", verbose=True)
-    userio.quickTable("", ["Argument", "Value"],
-                    [[arg, getattr(args, arg)] for arg in vars(args)],
-                    verbose=True)
+    # Verbose print generation
+    userio.print("\nGenerating with following arguments:", verbose=True)
+    userio.quick_table("", ["ARGUMENT", "VALUE"],
+                       [["Input path", input_path],
+                        ["Output path", output_path],
+                        ["Template path", template_path]],
+                       verbose=True)
 
     # Check input
-    if not os.path.isdir(args.input):
+    if not os.path.isdir(input_path):
         userio.error("Invalid input path!")
 
     # Check output
-    if not os.path.isdir(args.output):
+    if not os.path.isdir(output_path):
         userio.error("Invalid output path!")
 
-    # Check port
-    if args.port < 0 or args.port > 65535:
-        userio.error("Invalid port!")
-
-    # Check mode
-    if args.mode.lower() != "wifinina":
-        userio.error("Target mode not supported!\nSupported modes: wifinina")
-
     # Check output
-    if not os.path.isdir(args.output):
+    if not os.path.isdir(output_path):
         userio.error("Invalid input path!")
 
-    # Check templates folder
-    if args.template == "":
-        install_dir = os.path.dirname(os.path.realpath(__file__))
-        args.template = os.path.join(install_dir, "templates")
-        userio.print("Using build in template files at " + args.template, verbose=True)
-    if not os.path.isdir(args.template):
+    # Check template
+    if not os.path.isdir(template_path):
         userio.error("Invalid template path!")
 
     # Clear previous output
-    if not clearOutput(userio, os.path.join(args.output, "main/")):
+    if not delete_folder_safe(userio, os.path.join(output_path, "main/")):
         userio.error("Can't continue with existing output folder")
-        exit(1)
-    
-    args.ssid, args.ssid_pass = get_ssid_pass(userio, args.quiet)
 
-    #
     # Process input
-    #
     userio.section("Processing input files...")
-    file_data, mime_data = get_input_data(userio, args.input)
+    file_data, mime_data = get_input_data(userio, input_path)
 
-    #
-    # Pack misc data
-    #
-    userio.section("Processing misc. data...")
-    meta_data = {
-        "ssid": cpp_str_esc(args.ssid),
-        "pass": cpp_str_esc(args.ssid_pass),
-        "port": str(args.port)
-    }
+    # Pack meta data
+    meta_data = {key: cpp_str_esc(value)
+                 for key, value in meta_data.items()}
 
     # Print all data that can be used in jinja2 files processed
     userio.print("\nListing data available to the templates:", verbose=True)
-    userio.quickTable("File Data",
-                    ["File name", "File hash", "File MIME", "MIME hash", "File type", "File content"],
-                    [[file_name, *[shorten(value, 100) for value in file_data_struct.values()]] 
-                        for (file_name,file_data_struct) in file_data.items()]
-                    , verbose=True)
+    userio.quick_table("File Data",
+                       ["File name", "File hash", "File MIME",
+                        "MIME hash", "File type", "File content"],
+                       [[file_name, *[shorten(value, 100)
+                                      for value in file_data_struct.values()]]
+                        for (file_name, file_data_struct) in file_data.items()],
+                       verbose=True)
 
-    userio.quickTable("MIME Data",
-                    ["MIME", "MIME hash"],
-                    mime_data.items(), verbose=True)
+    userio.quick_table("MIME Data",
+                       ["MIME", "MIME hash"],
+                       mime_data.items(), verbose=True)
 
-    userio.quickTable("Meta Data",
-                    ["Key", "Value"],
-                    meta_data.items(), verbose=True)
+    userio.quick_table("Meta Data",
+                       ["Key", "Value"],
+                       meta_data.items(), verbose=True)
 
     # Now, find and process Template files
     userio.section("Writing program files...")
-    generate_from_template(userio, args.template, args.output,
+    generate_from_template(userio, template_path, output_path,
                            file_data, mime_data, meta_data)
-
-if __name__ == "__main__":
-    main()

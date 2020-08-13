@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='webduino-generator',
-    version='0.3',
+    version='0.4',
     license='UNLICENSE',
     url='https://github.com/StoneLabs/webduino-generator',
     author='Levy Ehrstein',
@@ -11,10 +11,11 @@ setup(
     description='Python program to automatically generate source code for an arduino web server',
     long_description='Python program to automatically create arduino webserver from folder.\nSupports basically all file types. For example: html, js, css, images, and arbitrary binaries.',
     packages=["webduino_generator"],
-    package_data={"webduino_generator": ["templates/*"]},
+    package_data={"webduino_generator": ["templates/*", "demo/*"]},
     include_package_data=True,
-    entry_points = {
-        'console_scripts': ['webduino-generator=webduino_generator.generator:main'],
+    entry_points={
+        'console_scripts': ['webduino-generator=webduino_generator.entrypoint:main',
+                            'wgen=webduino_generator.entrypoint:main'],
     },
     install_requires=["jinja2", "rich"],
 )

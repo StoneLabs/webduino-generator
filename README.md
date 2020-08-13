@@ -13,15 +13,23 @@ $ sudo pip install webduino-generator
 ```
 
 # Usage
-The following will builde the included demo website.
+The following will build the demo website included in this repository.
 ```
 $ git clone https://github.com/StoneLabs/webduino-generator
 $ cd webduino-generator/
-$ webduino-generator input
-$ arduino output/main/main.ino
+$ wgen generate input
+$ arduino main/main.ino
 
 Or use arduino-cli to compile and upload directly from the shell (linux only)
 $ ./uploader.sh
+```
+
+# Projects
+Aside from build a random folder you can create a project. By default a simple hello world program will be created.
+```
+$ wgen init
+$ wgen build
+$ arduino output/main/main.ino
 ```
 
 ### Note
