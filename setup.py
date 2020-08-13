@@ -13,8 +13,8 @@ setup(
     packages=["webduino_generator"],
     package_data={"webduino_generator": ["templates/*", "demo/*"]},
     include_package_data=True,
-    entry_points = {
-        'console_scripts': ['webduino-generator=webduino_generator.generator:main'],
+    entry_points={
+        'console_scripts': ['webduino-generator=webduino_generator.entrypoint:main'],
     },
     install_requires=["jinja2", "rich"],
 )
