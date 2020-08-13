@@ -104,7 +104,8 @@ def main():
     # Check arguments
     #
     args = parser.parse_args()
-    userio.verbose = args.verbose
+    if hasattr(args, "verbose"):
+        userio.verbose = args.verbose
 
     userio.print("[bold]Stone Labs. Webduino Gernerator\n")
 
