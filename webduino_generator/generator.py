@@ -3,7 +3,6 @@ import hashlib
 import shutil
 import os
 
-from .__init__ import __version__
 from .userio import UserIO
 from .helper import cpp_str_esc, cpp_img_esc, get_files_rec, shorten
 from jinja2 import Template
