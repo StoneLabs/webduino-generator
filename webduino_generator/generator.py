@@ -1,6 +1,7 @@
-import mimetypes 
+import mimetypes
 import argparse
 import hashlib
+import configparser
 import shutil
 import os
 
@@ -185,6 +186,14 @@ def generate_from_template(userio, template_path, output_path,
         # All files processed
         progress.tasks[task1].description = "Done"
 
+def get_template_path():
+    install_dir = os.path.dirname(os.path.realpath(__file__))
+    return os.path.join(install_dir, "templates")
+
+def get_demo_path():
+    install_dir = os.path.dirname(os.path.realpath(__file__))
+    return os.path.join(install_dir, "demo")
+
 def command_generate(userio, args):
 
     # Check input
@@ -209,8 +218,7 @@ def command_generate(userio, args):
 
     # Check templates folder
     if args.template == "":
-        install_dir = os.path.dirname(os.path.realpath(__file__))
-        args.template = os.path.join(install_dir, "templates")
+        args.template = get_template_path()
         userio.print("Using build in template files at " + args.template, verbose=True)
     if not os.path.isdir(args.template):
         userio.error("Invalid template path!")
@@ -263,11 +271,62 @@ def command_generate(userio, args):
 def command_version(userio, args):
     userio.print("Current version: " + __version__)
 
+def command_init(userio, project_path):
+    userio.section("Generating hello world project")
+
+    if not os.path.exists(project_path):
+        userio.error("Path " + project_path + " is invalid or does not exist!")
+
+    if len(get_files_rec(project_path)) > 0:
+        userio.warn("Target folder (" + os.path.abspath(project_path) + ") is not empty!")
+        userio.warn("Data will not be deleted by this action!")
+        userio.print("Press Enter to continue anyway. Ctrl+C to cancel!")
+        try:
+            input()
+        except KeyboardInterrupt:
+            return
+    
+    path_input = os.path.join(project_path, "input")
+    path_template = os.path.join(project_path, "template")
+    path_template_src = get_template_path()
+
+    path_config = os.path.join(project_path, ".webduino-generator")
+    path_config_file = os.path.join(project_path, "project.cfg")
+
+    # Check before we start
+    if os.path.exists(path_config):
+        userio.error("Config folder " + path_config + " exists! Is there already a project here?")
+
+    if os.path.exists(path_config_file):
+        userio.error("Project file " + path_config_file + " exists! Is there already a project here?")
+
+    userio.print("Creating project files")
+    os.mkdir(path_config)
+    with open(path_config_file, "w") as config_file:
+        config_file.write("todo")
+
+    def copy_tree_if_not_exists(src, target, name):
+        if not os.path.exists(target):
+            shutil.copytree(src, target)
+        elif os.path.isfile(target):
+            userio.error(name + " exists and is file!")
+        elif os.path.exists(target) and os.path.isdir(target):
+            userio.warn(name + " exists! Do nothing!")
+
+    userio.print("Creating input files")
+    copy_tree_if_not_exists(get_demo_path(), path_input, "Input folder")
+
+    userio.print("Creating template files")
+    copy_tree_if_not_exists(get_template_path(), path_template, "Template folder")
+
+    userio.section("Project created successfully.")
+    userio.print("Use 'webduino-generator build' to build your project.")
+
 def main():
     install_traceback()
     userio = UserIO()
 
-    #s
+    #
     # Parser input
     #
     parser = argparse.ArgumentParser(prog="webduino-generator",
@@ -300,6 +359,10 @@ def main():
            
     
     parser_init = subparsers.add_parser("init", help="Create new project in current working directory")
+    parser_init.add_argument("target", metavar="target", type=str,
+                             default=".", nargs="?",
+                             help="Target folder where project will be created")
+
     parser_build = subparsers.add_parser("build", help="Generate Arduino code from current project")
     parser_compile = subparsers.add_parser("compile", help="Compile Arduino code from current project")
     parser_upload = subparsers.add_parser("upload", help="Upload Arduino code from current project")
@@ -310,8 +373,8 @@ def main():
     for subparser in subparsers.choices.values():
         group = subparser.add_argument_group("global arguments")
         group.add_argument("-v", "--verbose",
-                               action="store_true", dest='verbose',
-                               help="Enable verbose output")
+                           action="store_true", dest='verbose',
+                           help="Enable verbose output")
 
     #
     # Check arguments
@@ -332,7 +395,7 @@ def main():
     elif args.command == "version":
         command_version(userio, args)
     elif args.command == "init":
-        raise NotImplementedError
+        command_init(userio, args.target)
     elif args.command == "build":
         raise NotImplementedError
     elif args.command == "compile":
