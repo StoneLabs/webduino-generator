@@ -194,6 +194,14 @@ def generate_from_template(userio, template_path, output_path,
 def generate(userio, input_path, output_path, template_path,
              meta_data):
 
+    # Verbose print generation
+    userio.print("\nGenerating with following arguments:", verbose=True)
+    userio.quick_table("", ["ARGUMENT", "VALUE"],
+                       [["Input path", input_path],
+                        ["Output path", output_path],
+                        ["Template path", template_path]],
+                       verbose=True)
+
     # Check input
     if not os.path.isdir(input_path):
         userio.error("Invalid input path!")
@@ -217,6 +225,10 @@ def generate(userio, input_path, output_path, template_path,
     # Process input
     userio.section("Processing input files...")
     file_data, mime_data = get_input_data(userio, input_path)
+
+    # Pack meta data
+    meta_data = {key: cpp_str_esc(value)
+                 for key, value in meta_data.items()}
 
     # Print all data that can be used in jinja2 files processed
     userio.print("\nListing data available to the templates:", verbose=True)

@@ -27,14 +27,14 @@ inline void staticResponder(WebServer &server, WebServer::ConnectionType type, c
 
 // MIME TYPES
 {%- for mime, hash in mimeData.items() %}
-static const char m_{{hash}}[] = {{mime}};
+static const char m_{{hash}}_s[] = "{{mime}}";
 {%- endfor %}
 
 // STATIC PAGES
 {%- for file, data in fileData.items() %}
 {%- if data.file_type == 0 %}
-static const unsigned char f_{{data.file_hash}}_s[] PROGMEM = {{data.file_content}};
-inline void f_{{data.file_hash}} (WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) { staticResponder(server, type, url_tail, tail_complete, f_{{data.file_hash}}_s, m_{{data.mime_hash}}); }
+static const unsigned char f_{{data.file_hash}}_s[] PROGMEM = "{{data.file_content}}";
+inline void f_{{data.file_hash}} (WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) { staticResponder(server, type, url_tail, tail_complete, f_{{data.file_hash}}_s, m_{{data.mime_hash}}_s); }
 {%- endif %}
 {%- endfor %}
 
@@ -42,7 +42,7 @@ inline void f_{{data.file_hash}} (WebServer &server, WebServer::ConnectionType t
 {%- for file, data in fileData.items() %}
 {%- if data.file_type == 1 %}
 static const unsigned char f_{{data.file_hash}}_s[] PROGMEM = {{data.file_content}};
-inline void f_{{data.file_hash}} (WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) { staticResponder(server, type, url_tail, tail_complete, f_{{data.file_hash}}_s, sizeof(f_{{data.file_hash}}_s), m_{{data.mime_hash}}); }
+inline void f_{{data.file_hash}} (WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) { staticResponder(server, type, url_tail, tail_complete, f_{{data.file_hash}}_s, sizeof(f_{{data.file_hash}}_s), m_{{data.mime_hash}}_s); }
 {%- endif %}
 {%- endfor %}
 

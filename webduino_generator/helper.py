@@ -10,7 +10,7 @@ def cpp_str_esc(s, encoding='ascii'):
             result += '\\%03o' % ord(c)
         else:
             result += c
-    return '"' + result + '"'
+    return result
 
 
 def cpp_img_esc(file):
