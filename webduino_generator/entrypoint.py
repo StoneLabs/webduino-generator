@@ -5,8 +5,7 @@ import json
 from .__init__ import __version__
 from .userio import UserIO, get_ssid_pass
 from .helper import cpp_str_esc, cpp_img_esc, get_files_rec, shorten, get_tool
-from .project import project_make_new, project_generate, project_get_sketch
-from .arduinocli import sketch_compile, sketch_upload
+from .project import project_make_new, project_generate, project_get_sketch, project_compile, project_upload
 from .generator import *
 
 
@@ -79,25 +78,11 @@ def command_open(userio, args):
 
 
 def command_compile(userio, args):
-    userio.section("Compiling project output")
-
-    # Get project output location
-    sketch_path = project_get_sketch(userio, args.target)
-    userio.print("Sketch located: " + sketch_path, verbose=True)
-
-    # Compile sketch using arduino-cli
-    sketch_compile(userio, sketch_path)
+    project_compile(userio, args.target)
 
 
 def command_upload(userio, args):
-    userio.section("Uploading project output")
-
-    # Get project output location
-    sketch_path = project_get_sketch(userio, args.target)
-    userio.print("Sketch located: " + sketch_path, verbose=True)
-
-    # Compile sketch using arduino-cli
-    sketch_upload(userio, sketch_path)
+    project_upload(userio, args.target)
 
 
 def main():
