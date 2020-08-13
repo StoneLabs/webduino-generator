@@ -1,5 +1,6 @@
 import argparse
 
+from .__init__ import __version__
 from .userio import UserIO, get_ssid_pass
 from .helper import cpp_str_esc, cpp_img_esc, get_files_rec, shorten
 from .project import project_make_new, project_generate
