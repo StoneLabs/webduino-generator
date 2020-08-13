@@ -18,7 +18,7 @@ The following will build the demo website included in this repository.
 $ git clone https://github.com/StoneLabs/webduino-generator
 $ cd webduino-generator/
 $ wgen generate input
-$ arduino main/main.ino
+$ wgen open
 
 Or use arduino-cli to compile and upload directly from the shell (linux only)
 $ ./uploader.sh
@@ -29,7 +29,7 @@ Aside from build a random folder you can create a project. By default a simple h
 ```
 $ wgen init
 $ wgen build
-$ arduino output/main/main.ino
+$ wgen open
 ```
 
 ### Note
