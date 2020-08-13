@@ -135,25 +135,34 @@ def main():
                        [[arg, getattr(args, arg)] for arg in vars(args)],
                        verbose=True)
 
-    # Check command
-    if args.command is None:
-        userio.error("No command specified!")
-    elif args.command == "version":
-        command_version(userio, args)
-    elif args.command == "init":
-        command_init(userio, args)
-    elif args.command == "build":
-        command_build(userio, args)
-    elif args.command == "compile":
-        raise NotImplementedError
-    elif args.command == "upload":
-        raise NotImplementedError
-    elif args.command == "open":
-        raise NotImplementedError
-    elif args.command == "generate":
-        command_generate(userio, args)
+    def handle():
+        # Check command
+        if args.command is None:
+            userio.error("No command specified!")
+        elif args.command == "version":
+            command_version(userio, args)
+        elif args.command == "init":
+            command_init(userio, args)
+        elif args.command == "build":
+            command_build(userio, args)
+        elif args.command == "compile":
+            raise NotImplementedError
+        elif args.command == "upload":
+            raise NotImplementedError
+        elif args.command == "open":
+            raise NotImplementedError
+        elif args.command == "generate":
+            command_generate(userio, args)
+        else:
+            userio.error("Unknown command. This should never happen!")
+
+    if userio.verbose:
+        handle()
     else:
-        userio.error("Unknown command. This should never happen!")
+        try:
+            handle()
+        except NotImplementedError:
+            userio.print("Sorry. This feature is not implemented yet. Use -v to trace.")
 
 
 if __name__ == "__main__":
