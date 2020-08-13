@@ -47,14 +47,15 @@ class UserIO:
 
         self.__out__(table)
 
-    def get_user_pass(self, prompt: str, userText: str, passText: str) -> Tuple[str, str]:
-        self.console.print(prompt)
+    def get_user(self, prompt: str, userText: str) -> Tuple[str, str]:
+        if prompt is not None:
+            self.console.print(prompt)
         self.console.print(userText, end="")
         userValue = input()
-        passValue = getpass.getpass(passText)
-        return userValue, passValue
+        return userValue
 
     def get_pass(self, prompt: str, passText: str) -> Tuple[str, str]:
-        self.console.print(prompt)
+        if prompt is not None:
+            self.console.print(prompt)
         passValue = getpass.getpass(passText)
         return passValue

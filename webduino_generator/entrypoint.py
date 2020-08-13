@@ -11,7 +11,8 @@ def get_ssid_pass(userio, ssid, no_warn):
     if not no_warn:
         userio.warn("SSID and Password will be saved as plaintext in the output!")
     if ssid == "":
-        return userio.get_user_pass("Please enter network credentials:", "SSID: ", "Password: ")
+        ssid = userio.get_user("Please enter network credentials:", "SSID: ")
+        return ssid, userio.get_pass(None, "Password: ")
     else:
         return ssid, userio.get_pass("Please enter network credentials:\nSSID: " + ssid, "Password: ")
 
@@ -52,7 +53,12 @@ def command_generate(userio, args):
 
 
 def command_init(userio, args):
-    project_make_new(userio, args.target, args.force)
+    project_make_new(userio, args.target, args.force,
+                     args.mode, args.ssid, args.port)
+
+
+def command_build(userio, args):
+    raise NotImplementedError
 
 
 def main():
@@ -93,11 +99,24 @@ def main():
     parser_init.add_argument("target", metavar="target", type=str,
                              default=".", nargs="?",
                              help="Target folder where project will be created")
+    parser_init.add_argument("-s", "--ssid", metavar="ssid", type=str,
+                             default="", dest='ssid',
+                             help="SSID of network")
+    parser_init.add_argument("-p", "--port", metavar="port", type=int,
+                             default=80, dest='port',
+                             help="Port of webserver")
+    parser_init.add_argument("-m", "--mode", metavar="mode", type=str,
+                             default="wifinina", dest='mode',
+                             help="Connection mode/library to be used")
     parser_init.add_argument("-f", "--force",
                              action="store_true", dest='force',
                              help="Delete files that block project creation.")
 
     parser_build = subparsers.add_parser("build", help="Generate Arduino code from current project")
+    parser_build.add_argument("-q", "--quiet",
+                              action="store_true", dest='quiet',
+                              help="Hides password warning")
+
     parser_compile = subparsers.add_parser("compile", help="Compile Arduino code from current project")
     parser_upload = subparsers.add_parser("upload", help="Upload Arduino code from current project")
     parser_open = subparsers.add_parser("open", help="Open generated code in arduino ide")
@@ -132,7 +151,7 @@ def main():
     elif args.command == "init":
         command_init(userio, args)
     elif args.command == "build":
-        raise NotImplementedError
+        command_build(userio, args)
     elif args.command == "compile":
         raise NotImplementedError
     elif args.command == "upload":
