@@ -1,9 +1,10 @@
 import argparse
+import subprocess
 
 from .__init__ import __version__
 from .userio import UserIO, get_ssid_pass
-from .helper import cpp_str_esc, cpp_img_esc, get_files_rec, shorten
-from .project import project_make_new, project_generate
+from .helper import cpp_str_esc, cpp_img_esc, get_files_rec, shorten, get_tool
+from .project import project_make_new, project_generate, project_get_sketch
 from .generator import *
 
 
@@ -49,6 +50,30 @@ def command_init(userio, args):
 
 def command_build(userio, args):
     project_generate(userio, args.target, args.quiet)
+
+
+def command_open(userio, args):
+    userio.section("Opening project output")
+
+    # Get project output location
+    sketch_path = project_get_sketch(userio, args.target)
+    userio.print("Sketch located: " + sketch_path, verbose=True)
+
+    # Get arduino IDE location
+    ide_path = get_tool("arduino")
+    if ide_path is None:
+        userio.error("Could not locate 'arduino' command. Is an arduino IDE istalled?")
+    userio.print("IDE located: " + ide_path, verbose=True)
+
+    # Launch IDE
+    if args.detach:
+        userio.print("Opening IDE detached...")
+        subprocess.Popen([ide_path, sketch_path],
+                         stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL)
+    else:
+        userio.print("Opening IDE...")
+        subprocess.call([ide_path, sketch_path])
 
 
 def main():
@@ -100,19 +125,26 @@ def main():
                              help="Connection mode/library to be used")
     parser_init.add_argument("-f", "--force",
                              action="store_true", dest='force',
-                             help="Delete files that block project creation.")
+                             help="Delete files that block project creation")
 
     parser_build = subparsers.add_parser("build", help="Generate Arduino code from current project")
     parser_build.add_argument("target", metavar="target", type=str,
                               default=".", nargs="?",
-                              help="Target folder where project will be created")
+                              help="Root folder of target project")
     parser_build.add_argument("-q", "--quiet",
                               action="store_true", dest='quiet',
                               help="Hides password warning")
 
+    parser_open = subparsers.add_parser("open", help="Open generated code in arduino ide")
+    parser_open.add_argument("target", metavar="target", type=str,
+                             default=".", nargs="?",
+                             help="Root folder of target project")
+    parser_open.add_argument("-d", "--detach",
+                             action="store_true", dest='detach',
+                             help="Spawns IDE in a new thread")
+
     parser_compile = subparsers.add_parser("compile", help="Compile Arduino code from current project")
     parser_upload = subparsers.add_parser("upload", help="Upload Arduino code from current project")
-    parser_open = subparsers.add_parser("open", help="Open generated code in arduino ide")
     parser_version = subparsers.add_parser("version", help="Display current version")
 
     # Global arguments
@@ -151,7 +183,7 @@ def main():
         elif args.command == "upload":
             raise NotImplementedError
         elif args.command == "open":
-            raise NotImplementedError
+            command_open(userio, args)
         elif args.command == "generate":
             command_generate(userio, args)
         else:

@@ -64,6 +64,25 @@ def project_config_readmeta(userio, config_path):
     return config["METADATA"]
 
 
+def project_get_sketch(userio, project_path):
+    '''Returns location of arduino output sketch. (main.ino)
+       Returns None if project was not build yet.'''
+
+    # Check project
+    if not project_check(project_path):
+        userio.error("Target project not found!")
+
+    # Read project data
+    input_path, output_path, template_path = project_config_readproject(userio, project_path)
+
+    # Check if project has been build yet
+    sketch_path = os.path.join(output_path, "main", "main.ino")
+    if not os.path.exists(sketch_path) or not os.path.isfile(sketch_path):
+        return None
+
+    return sketch_path
+
+
 def project_make_new(userio, project_path, delete_block, mode, ssid, port):
     # Check port
     if port < 0 or port > 65535:

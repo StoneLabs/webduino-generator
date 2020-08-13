@@ -1,5 +1,7 @@
 import os
 
+from shutil import which
+
 
 def cpp_str_esc(s, encoding='ascii'):
     if isinstance(s, bytes):
@@ -34,3 +36,10 @@ def get_files_rec(parent):
 
 def shorten(text, maxLength):
     return str(text)[:maxLength] + ("..." if maxLength < len(str(text)) else "")
+
+
+def get_tool(name):
+    """Returns absolute path of command.
+       Returns None if command it not found."""
+
+    return which(name)
