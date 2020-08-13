@@ -6,6 +6,16 @@ from .project import project_make_new
 from .generator import *
 
 
+def get_ssid_pass(userio, ssid, no_warn):
+    # Get SSID and password for wifi connection
+    if not no_warn:
+        userio.warn("SSID and Password will be saved as plaintext in the output!")
+    if ssid == "":
+        return userio.get_user_pass("Please enter network credentials:", "SSID: ", "Password: ")
+    else:
+        return ssid, userio.get_pass("Please enter network credentials:\nSSID: " + ssid, "Password: ")
+
+
 def command_version(userio, args):
     userio.print("Current version: " + __version__)
 
@@ -26,7 +36,7 @@ def command_generate(userio, args):
                      verbose=True)
 
     # Get SSID and password
-    args.ssid, args.ssid_pass = get_ssid_pass(userio, args.quiet)
+    args.ssid, args.ssid_pass = get_ssid_pass(userio, args.ssid, args.quiet)
 
     # Pack meta data
     userio.section("Processing misc. data...")

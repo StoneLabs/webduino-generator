@@ -53,3 +53,8 @@ class UserIO:
         userValue = input()
         passValue = getpass.getpass(passText)
         return userValue, passValue
+
+    def get_pass(self, prompt: str, passText: str) -> Tuple[str, str]:
+        self.console.print(prompt)
+        passValue = getpass.getpass(passText)
+        return passValue

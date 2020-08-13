@@ -15,7 +15,7 @@ WebServer webserver("", {{ metaData.port }});
 void setup()
 {
     Serial.begin(115200);
-    WiFi.begin({{ metaData.pass }}, {{ metaData.pass }});
+    WiFi.begin({{ metaData.ssid }}, {{ metaData.pass }});
     if ( WiFi.status() != WL_CONNECTED) 
     {
         Serial.println("Couldn't get a wifi connection");
