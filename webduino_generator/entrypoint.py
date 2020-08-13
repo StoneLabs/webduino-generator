@@ -78,7 +78,7 @@ def command_open(userio, args):
 
 
 def command_compile(userio, args):
-    project_compile(userio, args.target,
+    project_compile(userio, args.target, save=args.save,
                     force_select=args.select_device)
 
 
@@ -160,6 +160,9 @@ def main():
     parser_compile.add_argument("--select-device",
                                 action="store_true", dest='select_device',
                                 help="Ignore saved target device and select another one")
+    parser_compile.add_argument("--save",
+                                action="store_true", dest='save',
+                                help="Safe selected target to project files")
 
     parser_upload = subparsers.add_parser("upload", help="Upload Arduino code from current project")
     parser_upload.add_argument("target", metavar="target", type=str,

@@ -82,6 +82,18 @@ def project_config_readfqbn(userio, config_path):
     return config["TARGET"]["FQBN"]
 
 
+def project_config_writefqbn(userio, config_path, fqbn):
+    config = configparser.ConfigParser()
+    config.read(project_get_configfile(config_path))
+
+    if "TARGET" not in config.sections():
+        config["TARGET"] = {}
+    config["TARGET"]["FQBN"] = fqbn
+
+    with open(project_get_configfile(config_path), "w") as file:
+        config.write(file)
+
+
 def project_get_sketch(userio, project_path):
     '''Returns location of arduino output sketch. (main.ino)
        Returns None if project was not build yet.'''
@@ -213,7 +225,7 @@ def project_generate(userio, target, quiet):
     generate(userio, input_path, output_path, template_path, meta_data)
 
 
-def project_compile(userio, project_path, force_select=False):
+def project_compile(userio, project_path, force_select=False, save=False):
     userio.section("Compiling project output")
 
     # Get project output location
@@ -224,6 +236,8 @@ def project_compile(userio, project_path, force_select=False):
     fqbn = project_config_readfqbn(userio, project_path)
     if force_select or fqbn is None:
         name, fqbn = get_board(userio)
+    if save:
+        project_config_writefqbn(userio, project_path, fqbn)
 
     # Compile sketch using arduino-cli
     sketch_compile(userio, sketch_path, fqbn)
