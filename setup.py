@@ -17,5 +17,5 @@ setup(
         'console_scripts': ['webduino-generator=webduino_generator.entrypoint:main',
                             'wgen=webduino_generator.entrypoint:main'],
     },
-    install_requires=["jinja2", "rich"],
+    install_requires=["jinja2", "rich", "simple-term-menu"],
 )
