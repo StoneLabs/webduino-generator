@@ -272,10 +272,6 @@ def main():
     #
     parser = argparse.ArgumentParser(prog="webduino-generator",
                                      description="Webduino source builder")
-    # Global arguments
-    parser.add_argument("-v", "--verbose", 
-                        action="store_true", dest='verbose',
-                        help="Enable verbose output")
 
 
     subparsers = parser.add_subparsers(dest="command")
@@ -309,6 +305,14 @@ def main():
     parser_upload = subparsers.add_parser("upload", help="Upload Arduino code from current project")
     parser_open = subparsers.add_parser("open", help="Open generated code in arduino ide")
     parser_version = subparsers.add_parser("version", help="Display current version")
+
+    # Global arguments
+    for subparser in subparsers.choices.values():
+        group = subparser.add_argument_group("global arguments")
+        group.add_argument("-v", "--verbose",
+                               action="store_true", dest='verbose',
+                               help="Enable verbose output")
+
     #
     # Check arguments
     #
