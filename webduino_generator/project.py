@@ -213,7 +213,7 @@ def project_generate(userio, target, quiet):
     generate(userio, input_path, output_path, template_path, meta_data)
 
 
-def project_compile(userio, project_path):
+def project_compile(userio, project_path, force_select=False):
     userio.section("Compiling project output")
 
     # Get project output location
@@ -222,7 +222,7 @@ def project_compile(userio, project_path):
 
     # Get target FQBN
     fqbn = project_config_readfqbn(userio, project_path)
-    if fqbn is None:
+    if force_select or fqbn is None:
         name, fqbn = get_board(userio)
 
     # Compile sketch using arduino-cli
