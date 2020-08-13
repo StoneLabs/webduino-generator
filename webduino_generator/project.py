@@ -5,11 +5,16 @@ import os
 
 from .helper import get_files_rec
 from .generator import get_template_path, get_demo_path, generate
+from .arduinocli import sketch_compile, sketch_upload, get_board, get_board_connected
 from .userio import get_ssid_pass
 
 
+def project_get_configfile(project_path):
+    return os.path.join(project_path, "project.wgen")
+
+
 def project_check(target):
-    project_file = os.path.join(target, "project.wgen")
+    project_file = project_get_configfile(target)
     return os.path.exists(project_file) and os.path.isfile(project_file)
 
 
@@ -39,7 +44,7 @@ def project_config_make(input_path, template_path, output_path,
 
 def project_config_readproject(userio, config_path):
     config = configparser.ConfigParser()
-    config.read(os.path.join(config_path, "project.wgen"))
+    config.read(project_get_configfile(config_path))
 
     if "PROJECT" not in config.sections() or \
        "input_path" not in config["PROJECT"] or \
@@ -56,12 +61,25 @@ def project_config_readproject(userio, config_path):
 
 def project_config_readmeta(userio, config_path):
     config = configparser.ConfigParser()
-    config.read(os.path.join(config_path, "project.wgen"))
+    config.read(project_get_configfile(config_path))
 
     if "METADATA" not in config.sections():
         userio.error("Invalid project file!")
 
     return config["METADATA"]
+
+
+def project_config_readfqbn(userio, config_path):
+    config = configparser.ConfigParser()
+    config.read(project_get_configfile(config_path))
+
+    if "TARGET" not in config.sections():
+        return None
+
+    if "FQBN" not in config["TARGET"]:
+        return None
+
+    return config["TARGET"]["FQBN"]
 
 
 def project_get_sketch(userio, project_path):
@@ -125,7 +143,7 @@ def project_make_new(userio, project_path, delete_block, mode, ssid, port):
     path_template_src = get_template_path()
 
     path_config = os.path.join(project_path, ".wgen")
-    path_config_file = os.path.join(project_path, "project.wgen")
+    path_config_file = project_get_configfile(project_path)
 
     # Helper function to delete file or folder
     def delete_file_or_folder(target):
@@ -193,3 +211,33 @@ def project_generate(userio, target, quiet):
 
     # Eventually create output
     generate(userio, input_path, output_path, template_path, meta_data)
+
+
+def project_compile(userio, project_path):
+    userio.section("Compiling project output")
+
+    # Get project output location
+    sketch_path = project_get_sketch(userio, project_path)
+    userio.print("Sketch located: " + sketch_path, verbose=True)
+
+    # Get target FQBN
+    fqbn = project_config_readfqbn(userio, project_path)
+    if fqbn is None:
+        name, fqbn = get_board(userio)
+
+    # Compile sketch using arduino-cli
+    sketch_compile(userio, sketch_path, fqbn)
+
+
+def project_upload(userio, project_path):
+    userio.section("Compiling project output")
+
+    # Get project output location
+    sketch_path = project_get_sketch(userio, project_path)
+    userio.print("Sketch located: " + sketch_path, verbose=True)
+
+    # Get target FQBN
+    name, fqbn, address = get_board_connected(userio)
+
+    # Compile sketch using arduino-cli
+    sketch_upload(userio, sketch_path, fqbn, address)

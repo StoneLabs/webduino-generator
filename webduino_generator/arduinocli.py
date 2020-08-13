@@ -14,6 +14,7 @@ def get_cli_path(userio):
 
     return cli_path
 
+
 def get_boards_json(userio, list_all=False):
     cli_path = get_cli_path(userio)
 
@@ -83,7 +84,7 @@ def get_boards_connected(userio):
     return processed
 
 
-def sketch_compile(userio, sketch_path):
+def get_board(userio):
     boards = get_boards(userio)
 
     if len(boards) == 0:
@@ -103,12 +104,10 @@ def sketch_compile(userio, sketch_path):
     userio.print("Selected board: ", verbose=True)
     userio.print(board, verbose=True)
 
-    # Compile sketch
-    cli_path = get_cli_path(userio)
-    subprocess.run([cli_path, "compile", "--fqbn", board["FQBN"], sketch_path])
+    return board["name"], board["FQBN"]
 
 
-def sketch_upload(userio, sketch_path):
+def get_board_connected(userio):
     boards = get_boards_connected(userio)
 
     if len(boards) == 0:
@@ -129,6 +128,16 @@ def sketch_upload(userio, sketch_path):
     userio.print("Selected board: ", verbose=True)
     userio.print(board, verbose=True)
 
+    return board["name"], board["FQBN"], board["address"]
+
+
+def sketch_compile(userio, sketch_path, fqbn):
     # Compile sketch
     cli_path = get_cli_path(userio)
-    subprocess.run([cli_path, "upload", "-p", board["address"], "--fqbn", board["FQBN"], sketch_path])
+    subprocess.run([cli_path, "compile", "--fqbn", fqbn, sketch_path])
+
+
+def sketch_upload(userio, sketch_path, fqbn, address):
+    # Upload sketch
+    cli_path = get_cli_path(userio)
+    subprocess.run([cli_path, "upload", "-p", address, "--fqbn", fqbn, sketch_path])
