@@ -37,13 +37,6 @@ def delete_folder_safe(userio, output_path):
     return True
 
 
-def get_ssid_pass(userio, no_warn):
-    # Get SSID and password for wifi connection
-    if not no_warn:
-        userio.warn("SSID and Password will be saved as plaintext in the output!")
-    return userio.get_user_pass("Please enter network credentials:", "SSID: ", "Password: ")
-
-
 def get_input_data(userio, input_path):
     # Get list of all files
     files = get_files_rec(input_path)
