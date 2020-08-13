@@ -1,5 +1,6 @@
 import os
 
+
 def cpp_str_esc(s, encoding='ascii'):
     if isinstance(s, bytes):
         s = s.encode(encoding)
@@ -11,8 +12,10 @@ def cpp_str_esc(s, encoding='ascii'):
             result += c
     return '"' + result + '"'
 
+
 def cpp_img_esc(file):
     return "{{{0}}}".format("".join(["0x%x," % byte for byte in file.read()]))
+
 
 def get_files_rec(parent):
     files = set()
@@ -27,6 +30,7 @@ def get_files_rec(parent):
 
             files.add(rel_file)
     return files
+
 
 def shorten(text, maxLength):
     return str(text)[:maxLength] + ("..." if maxLength < len(str(text)) else "")

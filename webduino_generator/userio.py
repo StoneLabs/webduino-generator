@@ -5,6 +5,7 @@ from rich.console import Console
 from rich.table import Table
 from rich import box
 
+
 class UserIO:
     console = Console()
     console._log_render.show_time = False
@@ -31,8 +32,8 @@ class UserIO:
         self.__out__("[bold red]Error: ", text)
         exit(1)
 
-    def quickTable(self, title: str, header: List[str], rows: List[List[str]], 
-                   verbose: bool = False) -> None:
+    def quick_table(self, title: str, header: List[str], rows: List[List[str]],
+                    verbose: bool = False) -> None:
         if verbose and not self.verbose:
             return
 
@@ -46,7 +47,7 @@ class UserIO:
 
         self.__out__(table)
 
-    def getUserPass(self, prompt: str, userText: str, passText: str) -> Tuple[str, str]:
+    def get_user_pass(self, prompt: str, userText: str, passText: str) -> Tuple[str, str]:
         self.console.print(prompt)
         self.console.print(userText, end="")
         userValue = input()
