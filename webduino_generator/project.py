@@ -7,7 +7,8 @@ from .helper import get_files_rec
 from .generator import get_template_path, get_demo_path
 
 
-def project_make_config(input_path, template_path, output_path) -> str:
+def project_make_config(input_path, template_path, output_path,
+                        mode, ssid, port) -> str:
     # Make new config file with default content
     config = configparser.ConfigParser()
     config["PROJECT"] = \
@@ -15,6 +16,12 @@ def project_make_config(input_path, template_path, output_path) -> str:
             "input_path": input_path,
             "template_path": template_path,
             "output_path": output_path,
+        }
+    config["METADATA"] = \
+        {
+            "mode": mode,
+            "ssid": ssid,
+            "port": port,
         }
 
     # Write to buffer and return content
@@ -24,12 +31,24 @@ def project_make_config(input_path, template_path, output_path) -> str:
         return buffer.read()
 
 
-def project_make_new(userio, project_path, delete_block):
-    userio.section("Generating 'hello world' project")
+def project_make_new(userio, project_path, delete_block, mode, ssid, port):
+    # Check port
+    if port < 0 or port > 65535:
+        userio.error("Invalid port!")
+
+    # Check mode
+    if mode.lower() != "wifinina":
+        userio.error("Target mode not supported!\nSupported modes: wifinina")
+
+    # Check ssid
+    if ssid == "":
+        ssid = userio.get_user("Please enter network credentials:", "SSID: ")
 
     # Check if target exists
     if not os.path.exists(project_path):
         userio.error("Path " + project_path + " is invalid or does not exist!")
+
+    userio.section("Generating 'hello world' project")
 
     # Check if target is empty
     if len(get_files_rec(project_path)) > 0:
@@ -86,9 +105,8 @@ def project_make_new(userio, project_path, delete_block):
 
     # Project config file
     with open(path_config_file, "w") as config_file:
-        config_file.write(project_make_config(path_input,
-                                              path_template,
-                                              path_output))
+        config_file.write(project_make_config(path_input, path_template,
+                                              path_output, mode, ssid, port))
 
     # Project output folder
     userio.print("Creating output folder", verbose=True)
