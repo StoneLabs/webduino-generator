@@ -2,4 +2,4 @@
 
 __author__ = 'Levy Ehrstein'
 __email__ = 'levyehrstein@googlemail.com'
-__version__ = '0.3'
+__version__ = '0.4'

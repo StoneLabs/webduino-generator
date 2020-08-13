@@ -5,6 +5,18 @@ from rich.console import Console
 from rich.table import Table
 from rich import box
 
+
+def get_ssid_pass(userio, ssid, no_warn):
+    # Get SSID and password for wifi connection
+    if not no_warn:
+        userio.warn("SSID and Password will be saved as plaintext in the output!")
+    if ssid == "":
+        ssid = userio.get_user("Please enter network credentials:", "SSID: ")
+        return ssid, userio.get_pass(None, "Password: ")
+    else:
+        return ssid, userio.get_pass("Please enter network credentials:\nSSID: " + ssid, "Password: ")
+
+
 class UserIO:
     console = Console()
     console._log_render.show_time = False
@@ -31,8 +43,8 @@ class UserIO:
         self.__out__("[bold red]Error: ", text)
         exit(1)
 
-    def quickTable(self, title: str, header: List[str], rows: List[List[str]], 
-                   verbose: bool = False) -> None:
+    def quick_table(self, title: str, header: List[str], rows: List[List[str]],
+                    verbose: bool = False) -> None:
         if verbose and not self.verbose:
             return
 
@@ -46,9 +58,15 @@ class UserIO:
 
         self.__out__(table)
 
-    def getUserPass(self, prompt: str, userText: str, passText: str) -> Tuple[str, str]:
-        self.console.print(prompt)
+    def get_user(self, prompt: str, userText: str) -> Tuple[str, str]:
+        if prompt is not None:
+            self.console.print(prompt)
         self.console.print(userText, end="")
         userValue = input()
+        return userValue
+
+    def get_pass(self, prompt: str, passText: str) -> Tuple[str, str]:
+        if prompt is not None:
+            self.console.print(prompt)
         passValue = getpass.getpass(passText)
-        return userValue, passValue
+        return passValue
