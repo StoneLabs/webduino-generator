@@ -14,8 +14,7 @@ def get_cli_path(userio):
 
     return cli_path
 
-
-def get_boards(userio, list_all=False, require_name=True, require_fqbn=False, require_port=False):
+def get_boards_json(userio, list_all=False):
     cli_path = get_cli_path(userio)
 
     if list_all:
@@ -36,19 +35,20 @@ def get_boards(userio, list_all=False, require_name=True, require_fqbn=False, re
     except Exception:
         userio.error("arduino-cli returned invalid JSON")
 
+    return boards
+
+
+def get_boards(userio):
+    boards = get_boards_json(userio, True)
+
     # arduino-cli board listall packes the result in a dict
-    if list_all:
-        if "boards" not in boards:
-            userio.error("Could not parse arduino-cli output")
-        boards = boards["boards"]
+    if "boards" not in boards:
+        userio.error("Could not parse arduino-cli output")
+    boards = boards["boards"]
 
     # Filter out invalid entries (or unwanted)
-    if require_name:
-        boards = [board for board in boards if "name" in board]
-    if require_fqbn:
-        boards = [board for board in boards if "FQBN" in board]
-    if require_port:
-        boards = [board for board in boards if "port" in board]
+    boards = [board for board in boards if "name" in board]
+    boards = [board for board in boards if "FQBN" in board]
 
     userio.print("Dumping processed arduino-cli response:", verbose=True)
     userio.print(boards, verbose=True)
@@ -56,14 +56,49 @@ def get_boards(userio, list_all=False, require_name=True, require_fqbn=False, re
     return boards
 
 
+def get_boards_connected(userio):
+    boards = get_boards_json(userio, False)
+
+    processed = []
+    for board in boards:
+        if "boards" not in board:
+            continue
+        if "address" not in board:
+            continue
+        if len(board["boards"]) != 1:
+            continue
+        if "FQBN" not in board["boards"][0]:
+            continue
+        if "name" not in board["boards"][0]:
+            continue
+        processed += [{
+            "name": board["boards"][0]["name"],
+            "FQBN": board["boards"][0]["FQBN"],
+            "address": board["address"]
+        }]
+
+    userio.print("Dumping processed arduino-cli response:", verbose=True)
+    userio.print(processed, verbose=True)
+
+    return processed
+
+
 def sketch_compile(userio, sketch_path):
-    boards = get_boards(userio, True, require_fqbn=True)
+    boards = get_boards(userio)
+
+    if len(boards) == 0:
+        userio.error("No boards found!")
 
     # Query user to select a board
     userio.print("Please select target board:")
     terminal_menu = TerminalMenu([board["name"] for board in boards], menu_highlight_style=None)
 
-    board = boards[terminal_menu.show()]
+    selection = terminal_menu.show()
+
+    # Menu cancled by user
+    if selection is None:
+        exit(0)
+    board = boards[selection]
 
     userio.print("Selected board: ", verbose=True)
     userio.print(board, verbose=True)
@@ -71,3 +106,29 @@ def sketch_compile(userio, sketch_path):
     # Compile sketch
     cli_path = get_cli_path(userio)
     subprocess.run([cli_path, "compile", "--fqbn", board["FQBN"], sketch_path])
+
+
+def sketch_upload(userio, sketch_path):
+    boards = get_boards_connected(userio)
+
+    if len(boards) == 0:
+        userio.error("No boards found!")
+
+    # Query user to select a board
+    userio.print("Please select target board:")
+    terminal_menu = TerminalMenu([board["address"] + ": " + board["name"]
+                                 for board in boards], menu_highlight_style=None)
+
+    selection = terminal_menu.show()
+
+    # Menu cancled by user
+    if selection is None:
+        exit(0)
+    board = boards[selection]
+
+    userio.print("Selected board: ", verbose=True)
+    userio.print(board, verbose=True)
+
+    # Compile sketch
+    cli_path = get_cli_path(userio)
+    subprocess.run([cli_path, "upload", "-p", board["address"], "--fqbn", board["FQBN"], sketch_path])
