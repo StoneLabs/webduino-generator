@@ -265,7 +265,7 @@ class Project():
         sketch_compile(self.userio, sketch_path, fqbn)
 
     def upload(self):
-        self.userio.section("Compiling project output")
+        self.userio.section("Uploading project output")
 
         # Get project output location
         sketch_path = self.get_sketch_path()

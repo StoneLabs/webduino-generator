@@ -26,7 +26,7 @@ def get_files_rec(parent):
             rel_dir = os.path.relpath(dir_, parent)
             rel_file = os.path.join(rel_dir, file_name)
 
-            rel_file = rel_file.replace("\\","/")
+            rel_file = rel_file.replace("\\", "/")
             if rel_file.startswith("./"):
                 rel_file = rel_file[2:]
 
