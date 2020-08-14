@@ -2,4 +2,5 @@
 
 __author__ = 'Levy Ehrstein'
 __email__ = 'levyehrstein@googlemail.com'
-__version__ = '0.4'
+__website__ = 'https://github.com/StoneLabs/webduino-generator'
+__version__ = '0.5'

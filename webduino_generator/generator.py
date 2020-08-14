@@ -40,6 +40,10 @@ def get_input_data(userio, input_path):
     # Get list of all files
     files = get_files_rec(input_path)
     userio.print("Processing " + str(len(files)) + " files...", verbose=True)
+
+    # Sort files for deterministic output
+    files = sorted(files)
+
     userio.quick_table("", ["Input Files"],
                        [[_file] for _file in files], verbose=True)
 
@@ -107,6 +111,17 @@ def get_input_data(userio, input_path):
                 # Try to handle file non-binary UTF-8 file.
                 with open(os.path.join(input_path, file_name), 'r', encoding="UTF-8") as file:
                     if (file_name.endswith(".cpp")):
+                        # Warn user when using includes
+                        line_num = 0
+                        for line in file.readlines():
+                            line_num += 1
+                            if line.startswith("#include "):
+                                userio.print("")
+                                userio.warn(file_name + " line " + str(line_num) + ":")
+                                userio.print("| Putting includes in input files is not recommended!")
+                                userio.print("| This might cause conflicts or large sketch sizes!")
+                                userio.print("| Please put them int the template files instead.")
+
                         # Handle dynamic content (cpp files)
                         file_content = file.read().replace("\n", "\n\t")
                         file_type = 2  # Dynamic content
