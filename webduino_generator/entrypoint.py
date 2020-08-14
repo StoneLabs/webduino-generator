@@ -45,13 +45,13 @@ def command_generate(userio, args):
 
 
 def command_init(userio, args):
-    Project.project_make_new(userio, args.target, args.force,
+    Project.create_project(userio, args.target, args.force,
                              args.mode, args.ssid, args.port)
 
 
 def command_build(userio, args):
     project = Project(userio, args.target)
-    project.project_generate(args.quiet)
+    project.generate(args.quiet)
 
 
 def command_open(userio, args):
@@ -80,12 +80,12 @@ def command_open(userio, args):
 
 def command_compile(userio, args):
     project = Project(userio, args.target)
-    project.project_compile(save=args.save, force_select=args.select_device)
+    project.compile(save=args.save, force_select=args.select_device)
 
 
 def command_upload(userio, args):
     project = Project(userio, args.target)
-    project.project_upload()
+    project.upload()
 
 
 def main():

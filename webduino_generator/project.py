@@ -8,27 +8,10 @@ from .generator import get_template_path, get_demo_path, generate
 from .arduinocli import sketch_compile, sketch_upload, get_board, get_board_connected
 from .userio import get_ssid_pass
 
+
 class Project():
     userio = None
     root_path = ""
-
-    def __init__(self, userio, root_path):
-        self.userio = userio
-        self.root_path = root_path
-
-    def get_config_file_path(self):
-        '''Returns path to project.wgen of current project.
-           Program is exited if no config is found'''
-
-        config_path = os.path.join(self.root_path, "project.wgen")
-        return config_path
-
-    def project_check(self):
-        config_path = self.get_config_file_path()
-        if not os.path.exists(config_path) or \
-           not os.path.isfile(config_path):
-            return False
-        return True
 
     @staticmethod
     def make_config(input_path, template_path, output_path,
@@ -56,74 +39,10 @@ class Project():
             buffer.seek(0)
             return buffer.read()
 
-    def read_project(self):
-        config = configparser.ConfigParser()
-        config.read(self.get_config_file_path())
-
-        if "PROJECT" not in config.sections() or \
-           "input_path" not in config["PROJECT"] or \
-           "output_path" not in config["PROJECT"] or \
-           "template_path" not in config["PROJECT"]:
-            self.userio.error("Invalid project file!")
-
-        input_path = os.path.join(self.root_path, config["PROJECT"]["input_path"])
-        output_path = os.path.join(self.root_path, config["PROJECT"]["output_path"])
-        template_path = os.path.join(self.root_path, config["PROJECT"]["template_path"])
-
-        return input_path, output_path, template_path
-
-    def project_config_readmeta(self):
-        config = configparser.ConfigParser()
-        config.read(self.get_config_file_path())
-
-        if "METADATA" not in config.sections():
-            self.userio.error("Invalid project file!")
-
-        return config["METADATA"]
-
-    def project_config_readfqbn(self):
-        config = configparser.ConfigParser()
-        config.read(self.get_config_file_path())
-
-        if "TARGET" not in config.sections():
-            return None
-
-        if "FQBN" not in config["TARGET"]:
-            return None
-
-        return config["TARGET"]["FQBN"]
-
-    def project_config_writefqbn(self, fqbn):
-        config = configparser.ConfigParser()
-        config.read(self.get_config_file_path())
-
-        if "TARGET" not in config.sections():
-            config["TARGET"] = {}
-        config["TARGET"]["FQBN"] = fqbn
-
-        with open(self.get_config_file_path(), "w") as file:
-            config.write(file)
-
-    def project_get_sketch(self):
-        '''Returns location of arduino output sketch. (main.ino)
-        Returns None if project was not build yet.'''
-
-        # Check project
-        if not self.project_check():
-            self.userio.error("Target project not found!")
-
-        # Read project data
-        input_path, output_path, template_path = self.read_project()
-
-        # Check if project has been build yet
-        sketch_path = os.path.join(output_path, "main", "main.ino")
-        if not os.path.exists(sketch_path) or not os.path.isfile(sketch_path):
-            return None
-
-        return sketch_path
-
     @staticmethod
-    def project_make_new(userio, project_path, delete_block, mode, ssid, port):
+    def create_project(userio, project_path, delete_block, mode, ssid, port):
+        '''Creates new project in specified location'''
+
         # Check port
         if port < 0 or port > 65535:
             userio.error("Invalid port!")
@@ -156,8 +75,8 @@ class Project():
             except KeyboardInterrupt:
                 return
 
-        # Open project
-        project = Project(userio, project_path)
+        # Open project and do not check if its a valid one
+        project = Project(userio, project_path, check_valid=False)
 
         # Get paths to target files/folders beforehand
         path_input = os.path.join(project_path, "input")
@@ -167,7 +86,7 @@ class Project():
         path_input_src = get_demo_path()
         path_template_src = get_template_path()
 
-        path_config = os.path.join(project_path, ".wgen")
+        path_config = project.get_config_folder_path()
         path_config_file = project.get_config_file_path()
 
         # Helper function to delete file or folder
@@ -217,14 +136,106 @@ class Project():
         userio.section("Project created successfully.")
         userio.print("Use 'webduino-generator build' to build your project.")
 
-    def project_generate(self, quiet):
-        # Check project
-        if not self.project_check():
-            self.userio.error("Target project not found!")
+    def __init__(self, userio, root_path, check_valid=True):
+        '''Open existing project. Will error if invalid project
+           is passed and check_valid is True'''
+
+        self.userio = userio
+        self.root_path = root_path
+
+        if check_valid and not self.check():
+            self.userio.error("Invalid project passed.")
+
+    def check(self):
+        '''Checks whether current project is a valid project'''
+
+        config_path = self.get_config_file_path()
+        if not os.path.exists(config_path) or \
+           not os.path.isfile(config_path):
+            return False
+        return True
+
+    def get_config_file_path(self):
+        '''Returns path to project.wgen of current project.'''
+
+        config_path = os.path.join(self.root_path, "project.wgen")
+        return config_path
+
+    def get_config_folder_path(self):
+        '''Returns path to .wgen config folder of current project.'''
+
+        config_path = os.path.join(self.root_path, ".wgen")
+        return config_path
+
+    def get_sketch_path(self):
+        '''Returns location of arduino output sketch. (main.ino)
+        Returns None if project was not build yet.'''
 
         # Read project data
-        input_path, output_path, template_path = self.read_project()
-        meta_data = self.project_config_readmeta()
+        input_path, output_path, template_path = self.read_config_project()
+
+        # Check if project has been build yet
+        sketch_path = os.path.join(output_path, "main", "main.ino")
+        if not os.path.exists(sketch_path) or not os.path.isfile(sketch_path):
+            return None
+
+        return sketch_path
+
+    def read_config_project(self):
+        '''Returns input_path, output_path, template_path of current
+           project.'''
+        config = configparser.ConfigParser()
+        config.read(self.get_config_file_path())
+
+        if "PROJECT" not in config.sections() or \
+           "input_path" not in config["PROJECT"] or \
+           "output_path" not in config["PROJECT"] or \
+           "template_path" not in config["PROJECT"]:
+            self.userio.error("Invalid project file!")
+
+        input_path = os.path.join(self.root_path, config["PROJECT"]["input_path"])
+        output_path = os.path.join(self.root_path, config["PROJECT"]["output_path"])
+        template_path = os.path.join(self.root_path, config["PROJECT"]["template_path"])
+
+        return input_path, output_path, template_path
+
+    def read_config_meta(self):
+        config = configparser.ConfigParser()
+        config.read(self.get_config_file_path())
+
+        if "METADATA" not in config.sections():
+            self.userio.error("Invalid project file!")
+
+        return config["METADATA"]
+
+    def read_config_fqbn(self):
+        config = configparser.ConfigParser()
+        config.read(self.get_config_file_path())
+
+        if "TARGET" not in config.sections():
+            return None
+
+        if "FQBN" not in config["TARGET"]:
+            return None
+
+        return config["TARGET"]["FQBN"]
+
+    def write_config_fqbn(self, fqbn):
+        config = configparser.ConfigParser()
+        config.read(self.get_config_file_path())
+
+        if "TARGET" not in config.sections():
+            config["TARGET"] = {}
+        config["TARGET"]["FQBN"] = fqbn
+
+        with open(self.get_config_file_path(), "w") as file:
+            config.write(file)
+
+    def generate(self, quiet):
+
+        # Read project data
+        input_path, output_path, template_path = self.read_config_project()
+        meta_data = self.read_config_meta()
 
         # Enter ssid is none is in config
         if "ssid" not in meta_data:
@@ -236,28 +247,28 @@ class Project():
         # Eventually create output
         generate(self.userio, input_path, output_path, template_path, meta_data)
 
-    def project_compile(self, force_select=False, save=False):
+    def compile(self, force_select=False, save=False):
         self.userio.section("Compiling project output")
 
         # Get project output location
-        sketch_path = self.project_get_sketch()
+        sketch_path = self.get_sketch_path()
         self.userio.print("Sketch located: " + sketch_path, verbose=True)
 
         # Get target FQBN
-        fqbn = self.project_config_readfqbn()
+        fqbn = self.read_config_fqbn()
         if force_select or fqbn is None:
             name, fqbn = get_board(self.userio)
         if save:
-            self.project_config_writefqbn(fqbn)
+            self.write_config_fqbn(fqbn)
 
         # Compile sketch using arduino-cli
         sketch_compile(self.userio, sketch_path, fqbn)
 
-    def project_upload(self):
+    def upload(self):
         self.userio.section("Compiling project output")
 
         # Get project output location
-        sketch_path = self.project_get_sketch()
+        sketch_path = self.get_sketch_path()
         self.userio.print("Sketch located: " + sketch_path, verbose=True)
 
         # Get target FQBN
