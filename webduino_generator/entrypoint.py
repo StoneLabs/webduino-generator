@@ -5,7 +5,7 @@ import json
 from .__init__ import __version__
 from .userio import UserIO, get_ssid_pass
 from .helper import cpp_str_esc, cpp_img_esc, get_files_rec, shorten, get_tool
-from .project import project_make_new, project_generate, project_get_sketch, project_compile, project_upload
+from .project import Project
 from .generator import *
 
 
@@ -45,12 +45,13 @@ def command_generate(userio, args):
 
 
 def command_init(userio, args):
-    project_make_new(userio, args.target, args.force,
-                     args.mode, args.ssid, args.port)
+    Project.project_make_new(userio, args.target, args.force,
+                             args.mode, args.ssid, args.port)
 
 
 def command_build(userio, args):
-    project_generate(userio, args.target, args.quiet)
+    project = Project(userio, args.target)
+    project.project_generate(args.quiet)
 
 
 def command_open(userio, args):
@@ -78,12 +79,13 @@ def command_open(userio, args):
 
 
 def command_compile(userio, args):
-    project_compile(userio, args.target, save=args.save,
-                    force_select=args.select_device)
+    project = Project(userio, args.target)
+    project.project_compile(save=args.save, force_select=args.select_device)
 
 
 def command_upload(userio, args):
-    project_upload(userio, args.target)
+    project = Project(userio, args.target)
+    project.project_upload()
 
 
 def main():
