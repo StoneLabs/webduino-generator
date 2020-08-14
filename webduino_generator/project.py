@@ -252,6 +252,8 @@ class Project():
 
         # Get project output location
         sketch_path = self.get_sketch_path()
+        if sketch_path is None:
+            self.userio.error("Could not locate output files!")
         self.userio.print("Sketch located: " + sketch_path, verbose=True)
 
         # Get target FQBN
@@ -269,6 +271,8 @@ class Project():
 
         # Get project output location
         sketch_path = self.get_sketch_path()
+        if sketch_path is None:
+            self.userio.error("Could not locate output files!")
         self.userio.print("Sketch located: " + sketch_path, verbose=True)
 
         # Get target FQBN
