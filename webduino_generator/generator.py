@@ -40,6 +40,10 @@ def get_input_data(userio, input_path):
     # Get list of all files
     files = get_files_rec(input_path)
     userio.print("Processing " + str(len(files)) + " files...", verbose=True)
+
+    # Sort files for deterministic output
+    files = sorted(files)
+
     userio.quick_table("", ["Input Files"],
                        [[_file] for _file in files], verbose=True)
 
