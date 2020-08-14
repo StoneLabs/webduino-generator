@@ -1,5 +1,7 @@
 import os
 
+from shutil import which
+
 
 def cpp_str_esc(s, encoding='ascii'):
     if isinstance(s, bytes):
@@ -24,7 +26,7 @@ def get_files_rec(parent):
             rel_dir = os.path.relpath(dir_, parent)
             rel_file = os.path.join(rel_dir, file_name)
 
-            rel_file = rel_file.replace("\\","/")
+            rel_file = rel_file.replace("\\", "/")
             if rel_file.startswith("./"):
                 rel_file = rel_file[2:]
 
@@ -34,3 +36,10 @@ def get_files_rec(parent):
 
 def shorten(text, maxLength):
     return str(text)[:maxLength] + ("..." if maxLength < len(str(text)) else "")
+
+
+def get_tool(name):
+    """Returns absolute path of command.
+       Returns None if command it not found."""
+
+    return which(name)

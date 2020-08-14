@@ -62,11 +62,17 @@ class UserIO:
         if prompt is not None:
             self.console.print(prompt)
         self.console.print(userText, end="")
-        userValue = input()
+        try:
+            userValue = input()
+        except KeyboardInterrupt:
+            exit(1)
         return userValue
 
     def get_pass(self, prompt: str, passText: str) -> Tuple[str, str]:
         if prompt is not None:
             self.console.print(prompt)
-        passValue = getpass.getpass(passText)
+        try:
+            passValue = getpass.getpass(passText)
+        except KeyboardInterrupt:
+            exit(1)
         return passValue

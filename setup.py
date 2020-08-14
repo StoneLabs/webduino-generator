@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='webduino-generator',
-    version='0.4',
+    version='0.5',
     license='UNLICENSE',
     url='https://github.com/StoneLabs/webduino-generator',
     author='Levy Ehrstein',
@@ -17,5 +17,5 @@ setup(
         'console_scripts': ['webduino-generator=webduino_generator.entrypoint:main',
                             'wgen=webduino_generator.entrypoint:main'],
     },
-    install_requires=["jinja2", "rich"],
+    install_requires=["jinja2", "rich", "simple-term-menu"],
 )
