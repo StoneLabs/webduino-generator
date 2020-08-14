@@ -5,7 +5,7 @@ import os
 
 from .helper import get_files_rec
 from .generator import get_template_path, get_demo_path, generate
-from .arduinocli import sketch_compile, sketch_upload, get_board, get_board_connected
+from .arduino import sketch_compile, sketch_upload, get_board, get_board_connected
 from .userio import get_ssid_pass
 
 
