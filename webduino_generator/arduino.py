@@ -5,6 +5,16 @@ from simple_term_menu import TerminalMenu
 from .helper import get_tool
 
 
+def get_ide_path(userio):
+    # Get arduino IDE location
+    ide_path = get_tool("arduino")
+    if ide_path is None:
+        userio.error("Could not locate 'arduino' command. Is the arduino IDE istalled?")
+    userio.print("IDE located: " + ide_path, verbose=True)
+
+    return ide_path
+
+
 def get_cli_path(userio):
     # Get arduino IDE location
     cli_path = get_tool("arduino-cli")

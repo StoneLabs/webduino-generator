@@ -6,6 +6,7 @@ from .__init__ import __version__
 from .userio import UserIO, get_ssid_pass
 from .helper import cpp_str_esc, cpp_img_esc, get_files_rec, shorten, get_tool
 from .project import Project
+from .arduino import get_ide_path
 from .generator import *
 
 
@@ -63,10 +64,7 @@ def command_open(userio, args):
     userio.print("Sketch located: " + sketch_path, verbose=True)
 
     # Get arduino IDE location
-    ide_path = get_tool("arduino")
-    if ide_path is None:
-        userio.error("Could not locate 'arduino' command. Is an arduino IDE istalled?")
-    userio.print("IDE located: " + ide_path, verbose=True)
+    ide_path = get_ide_path(userio)
 
     # Launch IDE
     if args.detach:
