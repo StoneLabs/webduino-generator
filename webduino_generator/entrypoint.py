@@ -2,7 +2,7 @@ import argparse
 import subprocess
 import json
 
-from .__init__ import __version__
+from .__init__ import __version__, __website__
 from .userio import UserIO, get_ssid_pass
 from .helper import cpp_str_esc, cpp_img_esc, get_files_rec, shorten, get_tool
 from .project import Project
@@ -12,6 +12,7 @@ from .generator import *
 
 def command_version(userio, args):
     userio.print("Current version: " + __version__)
+    userio.print(__website__)
 
 
 def command_generate(userio, args):
