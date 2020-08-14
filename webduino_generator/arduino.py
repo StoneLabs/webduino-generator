@@ -61,6 +61,9 @@ def get_boards(userio):
     boards = [board for board in boards if "name" in board]
     boards = [board for board in boards if "FQBN" in board]
 
+    # Sort boards for the user
+    boards = sorted(boards, key=lambda board: board["name"])
+
     userio.print("Dumping processed arduino-cli response:", verbose=True)
     userio.print(boards, verbose=True)
 
@@ -87,6 +90,9 @@ def get_boards_connected(userio):
             "FQBN": board["boards"][0]["FQBN"],
             "address": board["address"]
         }]
+
+    # Sort boards for the user
+    processed = sorted(processed, key=lambda board: board["name"])
 
     userio.print("Dumping processed arduino-cli response:", verbose=True)
     userio.print(processed, verbose=True)
