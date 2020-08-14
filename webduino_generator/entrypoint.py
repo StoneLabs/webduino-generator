@@ -46,7 +46,7 @@ def command_generate(userio, args):
 
 def command_init(userio, args):
     Project.create_project(userio, args.target, args.force,
-                             args.mode, args.ssid, args.port)
+                           args.mode, args.ssid, args.port)
 
 
 def command_build(userio, args):
@@ -58,7 +58,8 @@ def command_open(userio, args):
     userio.section("Opening project output")
 
     # Get project output location
-    sketch_path = project_get_sketch(userio, args.target)
+    project = Project(userio, args.target)
+    sketch_path = project.get_sketch_path()
     userio.print("Sketch located: " + sketch_path, verbose=True)
 
     # Get arduino IDE location
