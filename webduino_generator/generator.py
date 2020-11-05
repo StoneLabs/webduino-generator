@@ -120,7 +120,7 @@ def get_input_data(userio, input_path):
                                 userio.warn(file_name + " line " + str(line_num) + ":")
                                 userio.print("| Putting includes in input files is not recommended!")
                                 userio.print("| This might cause conflicts or large sketch sizes!")
-                                userio.print("| Please put them int the template files instead.")
+                                userio.print("| Please put them in the template files instead.")
 
                         # Handle dynamic content (cpp files)
                         file_content = file.read().replace("\n", "\n\t")
